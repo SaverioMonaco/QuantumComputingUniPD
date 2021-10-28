@@ -27,7 +27,4 @@ program pi_montecarlo
 
 end program pi_montecarlo
 
-
-
-
 !   (d) (Optional) Connect to the cluster spiro.fisica.unpd.it via ssh and repeat the execution
