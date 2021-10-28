@@ -1,11 +1,5 @@
-! Quantum Information and Computing 2021-2022
-! Saverio Monaco, MAT. 2012264
-! Week 1, Exercise 3: Test performance
-!   Matrix matrix multiplication is many times the bottleneck of linear algebra computations.
-!   (a) Write explicitely the matrix-matrix multiplication loop in two different orders.
-!   (b) Use the Fortran intrinsic function.
-!   (c) Increase the matrix size and use the Fortran Function CPUTIME to monitor the code performance.
-!   (d) Use the compiler different optimization flags and monitor the performances
+! Having tested matrix multiplication on matrix_mult.f90 I copied the function
+! to perform a time analysis depending on the input size
 
 ! Operations
 module matrix_utilities
@@ -86,5 +80,30 @@ program matrix_mult
 
   use matrix_utilities
   use matrix_graphics
+
+  real*4, dimension(:,:), allocatable :: mat_A, mat_B, mat_C
+  real*8 :: start, finish ! for the CPU times
+
+  ! Perform a NxN NxN matrix multiplication
+  ! Generate two N by N random matrices
+  open(1, file = './cputimes.csv', status = 'old')
+  print*, "t | Size"
+  do n = 5, 100, 1
+    allocate(mat_A(n, n))
+    allocate(mat_B(n, n))
+
+    mat_A = matrix_random_initialization(n,n,10)
+    mat_B = matrix_random_initialization(n,n,10)
+    ! TEST call graphics_printmatrix(mat_A)
+    call cpu_time(start)
+    mat_C = matrix_multiplication(mat_A,mat_B)
+    call cpu_time(finish)
+
+    print*, finish - start , "|", n
+    write(1,*) finish - start , ",", n
+
+    deallocate(mat_A)
+    deallocate(mat_B)
+  end do
 
 end program matrix_mult
