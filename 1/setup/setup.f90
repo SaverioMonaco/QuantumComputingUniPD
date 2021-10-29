@@ -11,16 +11,16 @@ program pi_montecarlo
   implicit none ! types of implicit variable are assumed by their names,
                 ! we want to avoid that
 
-  integer :: hits, i          ! hits start from 0, increases by 1 if in circle
-  real :: rand_xy(100000,2)   ! random 100000 pair of coordinates
+  integer :: hits, i             ! hits start from 0, increases by 1 if in circle
+  real    :: rand_xy(100000,2)   ! random 100000 pair of coordinates
 
   call random_number(rand_xy) ! All the values of the array are 0<=v<=1 now
 
   hits = 0
   do i=0,100000,1
-   if( rand_xy(i,1)**2 + rand_xy(i,2)**2  < 1) then ! if inside the circle
-    hits = hits + 1                                 ! hits increases
-   endif
+    if( rand_xy(i,1)**2 + rand_xy(i,2)**2  < 1) then ! if inside the circle
+      hits = hits + 1                                 ! hits increases
+    endif
   enddo
 
   print *, "Pi is approximately:", 4*hits/real(100000)
