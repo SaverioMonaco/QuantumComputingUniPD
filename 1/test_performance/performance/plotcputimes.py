@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-data = np.genfromtxt('cputimes.csv', delimiter=',')
+data = np.genfromtxt('internal_noflag.csv', delimiter=',')
 
 #print(data)
 

@@ -1,6 +1,4 @@
-! Having tested matrix multiplication on matrix_mult.f90 I copied the function
-! to perform a time analysis depending on the input size
-
+!Testing the built-in function for matrix multiplication
 ! Operations
 module matrix_utilities
   implicit none
@@ -59,27 +57,8 @@ module matrix_utilities
 
 end module matrix_utilities
 
-! Printing and others
-module matrix_graphics
-  implicit none
-  contains
-
-  subroutine graphics_printmatrix(mat_A)
-    integer                 :: ii
-    real*4, dimension(:,:)  :: mat_A
-
-    do ii = 1, ubound(mat_A, 1)
-      print*, "|", mat_A(ii, :), "|"
-    end do
-
-  end subroutine graphics_printmatrix
-
-end module matrix_graphics
-
-program matrix_mult
-
+program matrix_mult_internal
   use matrix_utilities
-  use matrix_graphics
 
   real*4, dimension(:,:), allocatable :: mat_A, mat_B, mat_C
   real*8 :: start, finish ! for the CPU times
@@ -88,6 +67,7 @@ program matrix_mult
   ! Generate two N by N random matrices
   open(1, file = './cputimes.csv', status = 'old')
   print*, "t | Size"
+  ! We save the times to perform a n by n matrix multiplication
   do n = 5, 100, 1
     allocate(mat_A(n, n))
     allocate(mat_B(n, n))
@@ -95,15 +75,17 @@ program matrix_mult
     mat_A = matrix_random_initialization(n,n,10)
     mat_B = matrix_random_initialization(n,n,10)
     ! TEST call graphics_printmatrix(mat_A)
-    call cpu_time(start)
-    mat_C = matrix_multiplication(mat_A,mat_B)
-    call cpu_time(finish)
+    call cpu_time(start)  ! start time
+    mat_C = matmul(mat_A,mat_B)
+    call cpu_time(finish) ! end time
 
-    print*, finish - start , "|", n
-    write(1,*) finish - start , ",", n
+    ! finish - start is Delta T
+    print*, finish - start , "|", n      ! print on terminal
+    write(1,*) finish - start , ",", n   ! save on file
 
     deallocate(mat_A)
     deallocate(mat_B)
+
   end do
 
-end program matrix_mult
+end program matrix_mult_internal

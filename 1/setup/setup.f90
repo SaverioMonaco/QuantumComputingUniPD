@@ -27,4 +27,9 @@ program pi_montecarlo
 
 end program pi_montecarlo
 
-!   (d) (Optional) Connect to the cluster spiro.fisica.unpd.it via ssh and repeat the execution
+!   (d) (Optional) Connect to the cluster spiro.fisica.unpd.it via ssh
+!   and repeat the execution
+
+!   To send the this file through ssh:
+!   scp -o KexAlgorithms=diffie-hellman-group1-sha1 ./setup.f90
+!   monacos@147.162.55.11:path
