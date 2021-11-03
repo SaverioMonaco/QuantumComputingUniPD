@@ -3,3 +3,4 @@
 
 Weekly exercises in `Fortran` about numerical methods for quantum computing.
 1. Setup, Number Precision, Test Performance.
+2. Checkpoints, Documentation, Derived Types.
