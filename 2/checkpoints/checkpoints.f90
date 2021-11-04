@@ -6,9 +6,10 @@
 !  (b) Include an additional (optional) string to be printed
 !  (c) Include additional (optional) variables to be printed
 
-! Simple subroutine than prints the file where it is called and the line
-! DEBUG_ input variable that when is true actually execute the content of the
-! function
+!> Simple subroutine than prints the file where it is called and the line
+!> INPUT: realarg real variable to eventually print
+!> OTHER: DEBUG_ if true actually execute the content of the function
+!>        line prints the line
  subroutine check_real(DEBUG, realarg, line)
   logical        :: DEBUG   ! input, if DEBUG_ == TRUE we are in 'debug mode'
   real           :: realarg ! optional generic real argument
