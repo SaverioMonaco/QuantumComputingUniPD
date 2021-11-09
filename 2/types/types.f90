@@ -142,7 +142,7 @@ program test_types
 
   array = transpose(reshape((/ 1, 2, 3, 4 /), shape(array)))
   cmat = cmatrix_init(array)
-  ! cmat = cmatrix_init(2,3,10.0)
+  
   call cmatrix_print(cmat)
   cmat_adj = .Adj.cmat
   print*, "Dimension: ", cmat%dim
@@ -150,6 +150,6 @@ program test_types
   print*, "Adjoint: "
   call cmatrix_print(cmat_adj)
 
-  ! write the matrix in file 
+  ! write the matrix in file
   call cmatrix_write('file.csv', cmat)
 end program test_types
