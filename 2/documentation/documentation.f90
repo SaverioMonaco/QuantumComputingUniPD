@@ -8,8 +8,43 @@
 !  (d) Error handling
 !  (e) Checkpoints
 
+! To compile it:
+!   gfortran documentation.f90 -o doc -cpp
+
 !> Matrix Operations
 module matrix_utilities
+  ! ---------------------------------------------------------------------!
+  ! --------------------------- DOCUMENTATION ---------------------------!
+  ! ---------------------------------------------------------------------!
+  ! TYPES: none                                                          !
+  ! ---------------------------------------------------------------------!
+  ! FUNCTIONS:                                                           !
+  ! + matrix_random_initialization:                                      !
+  !     Initializes a real matrix randomly                               !
+  !     INPUT:                                                           !
+  !       > N = integer, number of cols of the matrix                    !
+  !       > M = integer, number of rows of the matrix                    !
+  !       > rand_range = integer, range of random numbers 0<=x<=range    !
+  !     OUTPUT:                                                          !
+  !       > mat_A = real*4, dimension(N,M), real random matrix           !
+  !                                                                      !
+  ! + matrix_multiplication:                                             !
+  !     Performs matrix multiplication through loop method               !
+  !     INPUT:                                                           !
+  !       > mat_A = real*4, dimension(:,:), first input matrix           !
+  !       > mat_B = real*4, dimension(:,:), second input matrix          !
+  !     OUTPUT:                                                          !
+  !       > mat_C = real*4, dimension(:,:), matrix from mat_A * mat_B    !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! SUBROUTINES                                                          !
+  ! + graphics_printmatrix                                               !
+  !   Prints matrix on terminal                                          !
+  !   INPUT:                                                             !
+  !     > mat_A = real*4, dimension(:,:), matrix to print                !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! ---------------------------------------------------------------------!
   implicit none
   contains
 
@@ -60,13 +95,6 @@ module matrix_utilities
     end if
   end function matrix_multiplication
 
-end module matrix_utilities
-
-!> Printing and other functions
-module matrix_graphics
-  implicit none
-  contains
-
   !> Simple function to print a matrix
   subroutine graphics_printmatrix(mat_A)
     integer                 :: ii
@@ -77,16 +105,45 @@ module matrix_graphics
     end do
 
   end subroutine graphics_printmatrix
-end module matrix_graphics
+
+end module matrix_utilities
 
 !> Module for debugging function
 !> Initialize DEBUG_ and set it .TRUE. to be in debug mode
 module debugging
-  use matrix_graphics
+  ! ---------------------------------------------------------------------!
+  ! --------------------------- DOCUMENTATION ---------------------------!
+  !  must define a DEBUG_variable that is automatically passed in all    !
+  !  debug functions                                                     !
+  ! ---------------------------------------------------------------------!
+  ! TYPES: none                                                          !
+  ! ---------------------------------------------------------------------!
+  ! FUNCTIONS: none                                                      !
+  ! ---------------------------------------------------------------------!
+  ! SUBROUTINES                                                          !
+  ! + check_real                                                         !
+  !   Simple subroutine than prints a real and where it is called and    !
+  !   the line                                                           !
+  !   INPUT:                                                             !
+  !     > realarg = real, real to print                                  !
+  !                                                                      !
+  ! + check_matrix                                                       !
+  !   Simple subroutine than prints matrix and line                      !
+  !   INPUT:                                                             !
+  !     > mat = real*4, dimension(:,:), matrix to print                  !
+  !                                                                      !
+  ! + check_custom_matrix_multiplication                                 !
+  !   Checks for custom implemented matrix multiplication using matmul   !
+  !   INPUT:                                                             !
+  !     > mat_A = real*4, dimension(:,:), input matrix for multiplication!
+  !     > mat_B = real*4, dimension(:,:), input matrix for multiplication!
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! ---------------------------------------------------------------------!
   use matrix_utilities
 
   contains
-  !> Simple subroutine than prints the file where it is called and the line
+  !> Simple subroutine than prints a real and where it is called and the line
   !> INPUT: realarg real variable to eventually print
   !> OTHER: DEBUG_ if true actually execute the content of the function
   !>        line prints the line
@@ -145,7 +202,6 @@ end module debugging
 program matrix_mult
   use debugging
   use matrix_utilities
-  use matrix_graphics
 
   real*4, dimension(:,:), allocatable :: mat_A, mat_B, mat_C
   real*8  :: start, finish ! for the CPU times

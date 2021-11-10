@@ -7,6 +7,9 @@
 
 ! Hint: Use LAPACK (ZHEEV)
 
+! To compile it:
+!   gfortran eigenproblem.f90 -o eigen -llapack
+
 module cmatrices
   ! ---------------------------------------------------------------------!
   ! --------------------------- DOCUMENTATION ---------------------------!
@@ -57,6 +60,22 @@ module cmatrices
   !       > cmat = type(cmatrix), input complex matrix                   !
   !     OUTPUT:                                                          !
   !       > cmat = type(cmatrix), adjoint matrix                         !
+  !                                                                      !
+  ! + cmatrix_heigenvalues                                               !
+  !     Creates an array of the eigenvalues of a complex hermitian matrix!
+  !     INPUT:                                                           !
+  !       > cmat = type(cmatrix), input complex matrix  (must be herm)   !
+  !     OUTPUT:                                                          !
+  !       > eigens = double precision, array of eigenvalues              !
+  !                                                                      !
+  ! + cmatrix_heigenspaces                                               !
+  !     Creates an array of the normalized spacings of eigenvalues       !
+   !    of a complex hermitian matrix                                    !
+  !     INPUT:                                                           !
+  !       > cmat = type(cmatrix), input complex matrix  (must be herm)   !
+  !     OUTPUT:                                                          !
+  !       > spacing = double precision, array of eigenvalues             !
+  !                                                                      !
   ! ---------------------------------------------------------------------!
   ! SUBROUTINES                                                          !
   ! + cmatrix_print                                                      !
@@ -68,11 +87,11 @@ module cmatrices
   !   Writes matrix to file                                              !
   !   INPUT:                                                             !
   !     > cmat = type(cmatrix), matrix to store                          !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
   ! ---------------------------------------------------------------------!
   implicit none
 
-  !> Here we define the type cmatrix, a double complex 2D matrix of generic
-  !> dimension
   type cmatrix
     integer, dimension(2)                   :: dim        ! dimension of the matrix
     complex*16, dimension(:,:), allocatable :: element
@@ -88,11 +107,11 @@ module cmatrices
   end interface
 
   interface operator(.Eigens.)
-    module procedure cmatrix_eigenvalues
+    module procedure cmatrix_heigenvalues
   end interface
 
   interface operator(.Eigenspacing.)
-    module procedure cmatrix_eigenspacing
+    module procedure cmatrix_heigenspacing
   end interface
 
   contains
@@ -208,7 +227,7 @@ module cmatrices
     cmat_adj = cmatrix_init( conjg(transpose(cmat%element)) )
   end function cmatrix_adjoint
 
-  function cmatrix_eigenvalues(cmat) result(eigens)
+  function cmatrix_heigenvalues(cmat) result(eigens)
     type(cmatrix), intent(IN)                   :: cmat
     double precision, dimension(:), allocatable :: eigens, RWORK
     integer                                     :: INFO, LWORK
@@ -231,9 +250,9 @@ module cmatrices
       ! Compute eigenvalues
       call ZHEEV('N', 'U', N, cmat%element, N, eigens, WORK, LWORK, RWORK, INFO)
     end if
-  end function cmatrix_eigenvalues
+  end function cmatrix_heigenvalues
 
-  function cmatrix_eigenspacing(cmat) result(spacing)
+  function cmatrix_heigenspacing(cmat) result(spacing)
     type(cmatrix), intent(IN)                   :: cmat
     double precision, dimension(:), allocatable :: eigens, spacing
     double precision                            :: inverseaveragelambda
@@ -245,15 +264,15 @@ module cmatrices
       allocate(eigens(N))
       allocate(spacing(N-1))
 
-      eigens = cmatrix_eigenvalues(cmat)
+      eigens = cmatrix_heigenvalues(cmat)
       inverseaveragelambda = (N-1)/ (eigens(N)-eigens(1))
-      
+
       do ii = 1, N-1, 1
         spacing(ii) = inverseaveragelambda * (eigens(ii+1) - eigens(ii))
       end do
 
     end if
-  end function cmatrix_eigenspacing
+  end function cmatrix_heigenspacing
 
   subroutine cmatrix_print(cmat)
     type(cmatrix) :: cmat

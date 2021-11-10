@@ -11,6 +11,70 @@
 !   (f) Include everything in a test program.
 
 module cmatrices
+  ! ---------------------------------------------------------------------!
+  ! --------------------------- DOCUMENTATION ---------------------------!
+  ! ---------------------------------------------------------------------!
+  ! TYPES:                                                               !
+  ! + cmatrix:                                                           !
+  !              Structure for complex 2D matrices                       !
+  !              > dim:     dimension of the matrix                      !
+  !              > element: actual array of elements                     !
+  !              > trace:   trace of the matrix                          !
+  !              > det:     determinant                                  !
+  ! ---------------------------------------------------------------------!
+  ! FUNCTIONS:                                                           !
+  ! + cmatrix_trace:                                                     !
+  !     Computes the trace                                               !
+  !     INPUT:                                                           !
+  !       > cmat = type(cmatrix), input complex matrix                   !
+  !     OUTPUT:                                                          !
+  !       > trace = complex*16, trace of thecomplex matrix               !
+  !                                                                      !
+  ! + cmatrix_randinit:                                                  !
+  !     Initialiazes complex matrix randomly                             !
+  !     INPUT:                                                           !
+  !       > nrow = integer, number of rows of matrix                     !
+  !       > ncol = integer, number of columns of matrix                  !
+  !       > range = real, range of numbers: 0<=x<=range                  !
+  !     OUTPUT:                                                          !
+  !       > cmat = type(cmatrix), complex matrix                         !
+  !                                                                      !
+  ! + cmatrix_randinit_hermitian:                                        !
+  !     Initialiazes complex hermitian matrix randomly                   !
+  !     INPUT:                                                           !
+  !       > n = integer, dimension of matrix                             !
+  !       > range = real, range of numbers: 0<=x<=range                  !
+  !     OUTPUT:                                                          !
+  !       > cmat = type(cmatrix), complex hermitian matrix               !
+  !                                                                      !
+  ! + cmatrix_init:                                                      !
+  !     Initialiazes complex matrix type given the 2d array              !
+  !     INPUT:                                                           !
+  !       > array2d = real*16, dimension(:,:), input 2d array            !
+  !     OUTPUT:                                                          !
+  !       > cmat = type(cmatrix), complex matrix                         !
+  !                                                                      !
+  ! + cmatrix_adjoint                                                    !
+  !     Outputs the adjoints of the input complex matrix                 !
+  !     INPUT:                                                           !
+  !       > cmat = type(cmatrix), input complex matrix                   !
+  !     OUTPUT:                                                          !
+  !       > cmat = type(cmatrix), adjoint matrix                         !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! SUBROUTINES                                                          !
+  ! + cmatrix_print                                                      !
+  !   Prints matrix on terminal                                          !
+  !   INPUT:                                                             !
+  !     > cmat = type(cmatrix), matrix to print                          !
+  !                                                                      !
+  ! + cmatrix_write                                                      !
+  !   Writes matrix to file                                              !
+  !   INPUT:                                                             !
+  !     > cmat = type(cmatrix), matrix to store                          !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! ---------------------------------------------------------------------!
   implicit none
 
   !> Here we define the type cmatrix, a double complex 2D matrix of generic
