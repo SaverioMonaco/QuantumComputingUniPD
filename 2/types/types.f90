@@ -141,8 +141,8 @@ program test_types
   complex*16, dimension(2,2)  :: array
 
   array = transpose(reshape((/ 1, 2, 3, 4 /), shape(array)))
-  cmat = cmatrix_init(array)
-  
+  cmat  = cmatrix_init(array)
+
   call cmatrix_print(cmat)
   cmat_adj = .Adj.cmat
   print*, "Dimension: ", cmat%dim

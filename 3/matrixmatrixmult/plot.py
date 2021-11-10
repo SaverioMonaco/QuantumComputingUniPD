@@ -7,7 +7,7 @@ loop     = np.genfromtxt('loop.csv', delimiter=',')
 internal = np.genfromtxt('internal.csv', delimiter=',')
 
 # Generic dense x vector for plotting lines
-x = np.arange(10,1000,1)
+x = np.arange(loop[0,1],loop[-1,1],1)
 
 ###########################################
 #        LOOP MATRIX MULTIPLICATION       #
