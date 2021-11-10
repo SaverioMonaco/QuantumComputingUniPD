@@ -1,6 +1,6 @@
 ! Quantum Information and Computing 2021-2022
 ! Saverio Monaco, MAT. 2012264
-! Week 1, Exercise 2: Scaling of the matrix-matrix multiplication
+! Week 3, Exercise 1: Scaling of the matrix-matrix multiplication
 ! Consider the program developed in Exercise 3 of Week 1 (matrix-matrix multiplication).
 !   (a) Write a python script that changes N between two values N min and N max , and launches the
 !       program.
@@ -106,7 +106,7 @@ program matrix_mult
     ! finish - start is Delta T
     print*, finish - start , "|", n      ! print on terminal
     write(1,*) finish - start , ",", n   ! save on file
-    
+
     deallocate(mat_A)
     deallocate(mat_B)
 
