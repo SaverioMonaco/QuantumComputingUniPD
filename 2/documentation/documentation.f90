@@ -85,7 +85,7 @@ module matrix_utilities
       do ii = 1, size(mat_A,1), 1
         do jj = 1, size(mat_B,2), 1
             do kk = 1, size(mat_B,1), 1
-                if (kk == 0) then
+                if (kk == 1) then
                   mat_C(ii,jj) = 0
                 end if
                 mat_C(ii, jj) = mat_C(ii, jj) + mat_A(ii, kk)*mat_B(kk, jj)
@@ -94,6 +94,40 @@ module matrix_utilities
       end do
     end if
   end function matrix_multiplication
+
+  !> Other order
+  !> input mat_A, mat_B matrices (2D arrays)
+  !> output mat_C array from AB=C. if size not correct returns an empty array
+  function matrix_multiplication2(mat_A, mat_B) result(mat_C)
+    real*4, dimension(:,:)                         :: mat_A, mat_B
+    real*4, dimension(size(mat_A,1),size(mat_B,2)) :: mat_C
+    logical                                        :: check
+    integer                                        :: ii,jj,kk
+
+    ! Check if multiplication is possible (shapes)
+    if (size(mat_A,2) .eq. size(mat_B,1)) then
+      check = .TRUE.
+    else
+      print*, "Input matrices cannot be multiplied"
+      check = .FALSE.
+    end if
+
+    ! Initialize output matrix to zeros, when allocating it's not granted every
+    ! element is 0
+    ! Begin multiplication
+    if (check .eqv. .TRUE.) then
+      do jj = 1, size(mat_B,2), 1
+        do ii = 1, size(mat_A,1), 1
+            do kk = 1, size(mat_B,1), 1
+                if (kk == 1) then
+                  mat_C(ii,jj) = 0
+                end if
+                mat_C(ii, jj) = mat_C(ii, jj) + mat_A(ii, kk)*mat_B(kk, jj)
+            end do
+        end do
+      end do
+    end if
+  end function matrix_multiplication2
 
   !> Simple function to print a matrix
   subroutine graphics_printmatrix(mat_A)
@@ -203,7 +237,7 @@ program matrix_mult
   use debugging
   use matrix_utilities
 
-  real*4, dimension(:,:), allocatable :: mat_A, mat_B, mat_C
+  real*4, dimension(:,:), allocatable :: mat_A, mat_B, mat_C, mat_D
   real*8  :: start, finish ! for the CPU times
   logical :: DEBUG = .TRUE.
   integer :: n = 3, m = 4
@@ -244,5 +278,21 @@ program matrix_mult
   deallocate(mat_A)
   deallocate(mat_B)
 
+  ! TEST for two different orders matrix multiplication
+  mat_C = mat_C*0
+  print*, ""
+  print*, "Test for matrix multiplication in the two different orders"
+  mat_A = matrix_random_initialization(n,m,10)
+  mat_B = matrix_random_initialization(m,n,10)
+
+  mat_C = matrix_multiplication(mat_A,mat_B)
+  mat_D = matrix_multiplication2(mat_A,mat_B)
+
+  print*, "First order A*B"
+  call graphics_printmatrix(mat_C)
+  print*, "Second order A*B"
+  call graphics_printmatrix(mat_D)
+  print*, "MATMUL A*B"
+  call graphics_printmatrix(matmul(mat_A,mat_B))
 
 end program matrix_mult
