@@ -36,6 +36,15 @@ module matrix_utilities
   !     OUTPUT:                                                          !
   !       > mat_C = real*4, dimension(:,:), matrix from mat_A * mat_B    !
   !                                                                      !
+  ! + matrix_multiplication2:                                            !
+  !     Performs matrix multiplication through loop method with the      !
+  !     second loop order                                                !
+  !     INPUT:                                                           !
+  !       > mat_A = real*4, dimension(:,:), first input matrix           !
+  !       > mat_B = real*4, dimension(:,:), second input matrix          !
+  !     OUTPUT:                                                          !
+  !       > mat_C = real*4, dimension(:,:), matrix from mat_A * mat_B    !
+  !                                                                      !
   ! ---------------------------------------------------------------------!
   ! SUBROUTINES                                                          !
   ! + graphics_printmatrix                                               !
