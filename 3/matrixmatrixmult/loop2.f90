@@ -157,7 +157,7 @@ program matrix_mult
   real*8                              :: start, finish ! for the CPU times
   integer                             :: Nstart, Nfinish, Ndelta
 
-  open(1, file = './loop.csv', status = 'old')
+  open(1, file = './loop2.csv', status = 'old')
   print *, "Enter N start, N finish and Delta N"
   read (*,*) Nstart,Nfinish,Ndelta
 
@@ -170,7 +170,7 @@ program matrix_mult
     mat_B = matrix_random_initialization(n,n,10)
     ! TEST call graphics_printmatrix(mat_A)
     call cpu_time(start)  ! start time
-    mat_C = matrix_multiplication(mat_A,mat_B)
+    mat_C = matrix_multiplication2(mat_A,mat_B)
     call cpu_time(finish) ! end time
 
     ! finish - start is Delta T
