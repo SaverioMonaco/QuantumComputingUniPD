@@ -155,31 +155,74 @@ program matrix_mult
 
   real*4, dimension(:,:), allocatable :: mat_A, mat_B, mat_C
   real*8                              :: start, finish ! for the CPU times
-  integer                             :: Nstart, Nfinish, Ndelta
+  integer                             :: N
+  character(10)                       :: mode
 
-  open(1, file = './loop.csv', status = 'old')
-  print *, "Enter N start, N finish and Delta N"
-  read (*,*) Nstart,Nfinish,Ndelta
+  read (*,*) mode,N
 
-  ! We save the times to perform a n by n matrix multiplication
-  do n = Nstart, Nfinish, Ndelta
-    allocate(mat_A(n, n))
-    allocate(mat_B(n, n))
+  if(mode == 'matmul') then
+    open(1, file = './internal.csv', status = 'old',position='append')
 
-    mat_A = matrix_random_initialization(n,n,10)
-    mat_B = matrix_random_initialization(n,n,10)
+    allocate(mat_A(N, N))
+    allocate(mat_B(N, N))
+
+    mat_A = matrix_random_initialization(N,N,10)
+    mat_B = matrix_random_initialization(N,N,10)
+    ! TEST call graphics_printmatrix(mat_A)
+    call cpu_time(start)  ! start time
+    mat_C = matmul(mat_A,mat_B)
+    call cpu_time(finish) ! end time
+
+    ! finish - start is Delta T
+    !print*, finish - start , "|", n      ! print on terminal
+    write(1,*) finish - start , ",", N   ! save on file
+
+    deallocate(mat_A)
+    deallocate(mat_B)
+
+  else if(mode == 'loop1') then
+    open(2, file = './loop.csv', status = 'old',position='append')
+
+    allocate(mat_A(N, N))
+    allocate(mat_B(N, N))
+
+    mat_A = matrix_random_initialization(N,N,10)
+    mat_B = matrix_random_initialization(N,N,10)
     ! TEST call graphics_printmatrix(mat_A)
     call cpu_time(start)  ! start time
     mat_C = matrix_multiplication(mat_A,mat_B)
     call cpu_time(finish) ! end time
 
     ! finish - start is Delta T
-    print*, finish - start , "|", n      ! print on terminal
-    write(1,*) finish - start , ",", n   ! save on file
+    !print*, finish - start , "|", n      ! print on terminal
+    write(2,*) finish - start , ",", N   ! save on file
 
     deallocate(mat_A)
     deallocate(mat_B)
 
-  end do
+
+  else if(mode == 'loop2') then
+    open(3, file = './loop2.csv', status = 'old',position='append')
+
+    allocate(mat_A(N, N))
+    allocate(mat_B(N, N))
+
+    mat_A = matrix_random_initialization(N,N,10)
+    mat_B = matrix_random_initialization(N,N,10)
+    ! TEST call graphics_printmatrix(mat_A)
+    call cpu_time(start)  ! start time
+    mat_C = matrix_multiplication2(mat_A,mat_B)
+    call cpu_time(finish) ! end time
+
+    ! finish - start is Delta T
+    !print*, finish - start , "|", n      ! print on terminal
+    write(3,*) finish - start , ",", N   ! save on file
+
+    deallocate(mat_A)
+    deallocate(mat_B)
+
+  else
+    print*, "Invalid arguments"
+  end if
 
 end program matrix_mult
