@@ -278,9 +278,9 @@ program matrix_mult
   ! everywhere but will have small values (even if working properly)
   ! We expect that
   print*
-  print*, "Matrix from custom multiplication - Matrix from Fortran multiplication:"
+  print*, "Loop multiplication - matmul:"
   call check_custom_matrix_multiplication(mat_A, mat_B)
-
+  print*
   ! finish - start is Delta T
   print*,'t=', finish - start , "| size=", n      ! print on terminal
 
