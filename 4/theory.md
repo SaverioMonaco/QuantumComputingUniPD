@@ -1,6 +1,7 @@
 ﻿# Quantum information and computing
 ## Exercise 4: Time Independent Schr&ouml;dinger equation
 ### Evolve numerically a system given the Hamiltonian:
+
 $$\hat{H}=\hat{p}^2+\omega^2\hat{x}^2$$
 
 1. $\hat{p}\to -i\hbar\frac{\partial}{\partial x}, \quad \hat{x}\to x$
