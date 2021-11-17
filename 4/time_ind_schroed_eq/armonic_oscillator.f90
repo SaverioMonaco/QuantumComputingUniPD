@@ -291,19 +291,6 @@ module cmatrices
   end subroutine cmatrix_write
 end module cmatrices
 
-program eigenvalue
-  use cmatrices
-
-  type(cmatrix) :: cmat
-
-  cmat  = cmatrix_randinit_hermitian(3,10.0)
-  call cmatrix_print(cmat)
-
-  ! (a) Diagonalize A and store the N eigenvalues λ i in crescent order.
-  print*, "Eigenvalues (ascending):", .Eigens.cmat
-
-  ! (b) Compute the normalized spacings between eigenvalues
-  print*, "Normalized spacings:", .Eigenspacing.cmat
-
-
-end program eigenvalue
+program qao
+  
+end program qao
