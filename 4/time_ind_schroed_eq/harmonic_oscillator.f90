@@ -72,6 +72,13 @@ module cmatrices
   !                                                                      !
   ! ---------------------------------------------------------------------!
   ! SUBROUTINES                                                          !
+  ! + cmatrix_heigens                                                    !
+  !   Computes both eigenvalues and eigenvectors                         !
+  !   INPUT:                                                             !
+  !     > cmat = type(cmatrix), input matrix                             !
+  !     > eigenv = complex(kind=8), dimension(:), eigenvalues OVERWR     !
+  !     > eigenh = complex(kind=8), dimension(:,:), eigenvectors OVERWR  !
+  !                                                                      !
   ! + cmatrix_print                                                      !
   !   Prints matrix on terminal                                          !
   !   INPUT:                                                             !
@@ -100,7 +107,7 @@ module cmatrices
     module procedure cmatrix_trace
   end interface
 
-  interface operator(.Eigens.)
+  interface operator(.Eigenv.)
     module procedure cmatrix_heigenvalues
   end interface
 
@@ -268,6 +275,36 @@ module cmatrices
     end if
   end function cmatrix_heigenspacing
 
+  subroutine cmatrix_heigens(cmat,eigenv,eigenh)
+    type(cmatrix)                               :: cmat
+    complex(kind=8), dimension(:)               :: eigenv
+    complex(kind=8), dimension(:,:)             :: eigenh
+
+    ! LAPACK variables
+    double precision, dimension(:), allocatable   :: RWORK
+    integer                                       :: INFO, LWORK
+    integer                                       :: N
+    integer, parameter                            :: LWMAX = 100000
+    complex*16                                    :: WORK(LWMAX)
+    complex(kind=8), dimension(:,:), allocatable  :: VR
+    ! Check if matrix is squared
+    if(cmat%dim(1) == cmat%dim(2)) then
+      N = cmat%dim(1)
+
+      allocate(RWORK(3*N-2))
+      allocate(VR(N,N))
+
+      ! Compute optimal size of workspace
+      LWORK = -1
+
+      call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N,WORK,LWORK,RWORK,INFO)
+      LWORK = min(LWMAX, int(WORK(1)))
+
+      ! Compute eigenvalues
+      call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N,WORK,LWORK,RWORK,INFO)
+    end if
+  end subroutine cmatrix_heigens
+
   subroutine cmatrix_print(cmat)
     type(cmatrix) :: cmat
     integer       :: ii
@@ -291,6 +328,109 @@ module cmatrices
   end subroutine cmatrix_write
 end module cmatrices
 
-program qao
-  
-end program qao
+module qho
+  use cmatrices
+
+  contains
+
+  function qho_H_init(L,N,omega) result(H)
+    real          :: L,omega
+    integer       :: N, ii
+
+    real*16, dimension(:,:), allocatable :: elem_real
+    type(cmatrix)                        :: H
+
+    allocate(elem_real(N+1,N+1))
+    elem_real = 0 * eleam_real
+
+    ! diagonal
+    do ii=1, N+1, 1
+      elem_real(ii,ii) = ( 2  * (N*N)/(L*L) ) + omega*omega*((ii-1)*L/N - L/2)*((ii-1)*L/N - L/2)
+    end do
+
+    do ii=2, N+1, 1
+      elem_real(ii,ii-1) = - (N*N)/(L*L)
+      elem_real(ii-1,ii) = - (N*N)/(L*L)
+    end do
+
+    elem_real = 0.5* elem_real
+
+    H = cmatrix_init(cmplx(X=elem_real,KIND=8))
+  end function qho_H_init
+end module qho
+
+program shroedingertimeindependent
+
+  use cmatrices
+  use qho
+
+  real                       :: L, omega
+  integer                    :: ii, N! number of discretized points
+                                        ! -> dimension of H
+  type(cmatrix)              :: H
+  character(20)              :: folder
+  external::zgeev
+
+  complex(kind=8), dimension(:), allocatable   :: eigenvalues
+  complex(kind=8), dimension(:,:), allocatable :: eigenvectors
+
+  integer :: verbose ! if 0 does not print anything
+
+  read (*,*) L,N,omega,folder,verbose
+
+  write(strL,'(F5.0)') L
+  write(strN,'(i10)') N
+  write(strW,'(F5.0)') omega
+
+  if(verbose /= 0) then
+    print*, "--------------------------------------------"
+    print*, "+        QUANTUM HARMONIC OSCILLATOR       +"
+    print*, "--------------------------------------------"
+    print*, "+ Lenght of x space (L): ", L
+    print*, "+ Number of points  (N): ", N
+    print*, "+ Angular frequency (ω): ", omega
+    print*, "--------------------------------------------"
+    print*, ""
+    print*, "+ Computing the Hamiltonian..."
+  end if
+
+  H = qho_H_init(L,N,omega)
+
+  if(verbose /= 0) then
+    if(N<3) then
+      call cmatrix_print(H)
+    else
+      print*, " !!! H matrix is too big to be printed on screen !!!"
+    end if
+
+    print*, ""
+    print*, "+ Computing Eigenvalues & Eigenvectors..."
+  end if
+
+  allocate(eigenvalues(N+1))
+  allocate(eigenvectors(N+1,N+1))
+
+  call cmatrix_heigens(H,eigenvalues,eigenvectors)
+
+  if(verbose /= 0) then
+    print*, "  Eigenvalues:"
+    if(N<5) then
+      do ii=1, 5, 1
+        print*, eigenvalues(ii)
+      end do
+    else
+      do ii=1, N+1, 1
+        print*, eigenvalues(ii)
+      end do
+    end if
+  end if
+
+  open(42, file='eigenvalues.csv')
+    do nn = 1, N+1, 1
+      write(42, *) REAL(eigenvalues(nn))
+    end do
+  close(42)
+
+  deallocate(eigenvalues)
+  deallocate(eigenvectors)
+end program shroedingertimeindependent
