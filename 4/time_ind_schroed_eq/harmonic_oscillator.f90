@@ -453,52 +453,68 @@ program shroedingertimeindependent
                                         ! -> dimension of H
   type(cmatrix)              :: H
   character(20)              :: folder
+  integer                    :: iostat ! Checking types in READ(*,*)
   external::zgeev
 
   complex(kind=8), dimension(:), allocatable   :: eigenvalues
   complex(kind=8), dimension(:,:), allocatable :: eigenvectors
   double precision, dimension(:), allocatable  :: spacings
 
-  integer :: verbose ! if 0 does not print anything
-
   integer :: infoeigens
   logical :: DEBUG
 
   DEBUG = .FALSE.
 
-  read (*,*) L,N,omega,folder,verbose
+  print*, "--------------------------------------------"
+  print*, "+        QUANTUM HARMONIC OSCILLATOR       +"
+  print*, "--------------------------------------------"
+  write(*,"(A)",advance='no') " + Type: L, N, omega and folder name: "
+  read (*,*, iostat=iostat) L,N,omega,folder
 
-  if(verbose /= 0) then
+  ! CHECK IF PARAMETERS ARE THE RIGHT TYPES
+  if(iostat /= 0) then
+    print*, "+ !!! INVALID PARAMETER TYPES !!!"
+    print*, "+ N = int"
+    print*, "+ L = real, int"
+    print*, "+ ω = real, int"
+    print*, "+ Exiting..."
     print*, "--------------------------------------------"
-    print*, "+        QUANTUM HARMONIC OSCILLATOR       +"
-    print*, "--------------------------------------------"
-    print*, "+ Data will be saved in: ./"//trim(folder)
-    print*, "+ Lenght of x space (L): ", L
-    print*, "+ Number of points  (N): ", N
-    print*, "+ Angular frequency (ω): ", omega
-    print*, "--------------------------------------------"
-    print*, ""
-    print*, "+ Computing the Hamiltonian..."
+    stop
   end if
+  
+  ! CHECK IF PARAMETERS ARE IN THE RIGHT RANGE
+  if(L <= 0 .OR. N<3 .OR. omega <=0) then
+    print*, "+ !!! INVALID PARAMETER RANGES !!!"
+    print*, "+ (L > 0, N > 1, ω > 0)"
+    print*, "+ Exiting..."
+    print*, "--------------------------------------------"
+    stop
+  end if
+
+  print*, "+ Data will be saved in: ./"//trim(folder)
+  print*, "+ Lenght of x space (L): ", L
+  print*, "+ Number of points  (N): ", N
+  print*, "+ Angular frequency (ω): ", omega
+  print*, "--------------------------------------------"
+  print*, ""
+  print*, "+ Computing the Hamiltonian..."
 
   H = qho_H_init(L,N,omega)
 
-  if(verbose /= 0) then
-    if(N<3) then
-      ! If we are in debug mode print also the imaginary part of H
-      ! H should be real only
-      if(DEBUG) then
-        call cmatrix_print(H)
-      else
-        call cmatrix_print_real(H)
-      end if
+  if(N<3) then
+    ! If we are in debug mode print also the imaginary part of H
+    ! H should be real only
+    if(DEBUG) then
+      call cmatrix_print(H)
     else
-      print*, " !!! H matrix is too big to be printed on screen !!!"
+      call cmatrix_print_real(H)
     end if
-
-    print*, ""
-    print*, "+ Computing Eigenvalues & Eigenvectors..."
+  else
+    print*, " !!! H matrix is too big to be printed on screen !!!"
   end if
+
+  print*, ""
+  print*, "+ Computing Eigenvalues & Eigenvectors..."
 
   allocate(eigenvalues(N+1))
   allocate(eigenvectors(N+1,N+1))
@@ -512,71 +528,46 @@ program shroedingertimeindependent
     end if
   end if
 
-  if(verbose /= 0) then
-    print*, "  Eigenvalues:"
-    if(N<5) then
-      do ii=1, N+1, 1
-        if(DEBUG) then ! If we are in debug mode print also the imaginary part
-                       ! that MUST BE 0
-          print*, eigenvalues(ii)
-        else
-          print*, " ", real(eigenvalues(ii))
-        end if
-      end do
-    else
-      do ii=1, 5, 1
-        if(DEBUG) then ! If we are in debug mode print also the imaginary part
-                       ! that MUST BE 0
-          print*, eigenvalues(ii)
-        else
-          print*, " ", real(eigenvalues(ii))
-        end if
-      end do
-    end if
+  print*, "  Eigenvalues:"
+  if(N<5) then
+    do ii=1, N+1, 1
+      if(DEBUG) then ! If we are in debug mode print also the imaginary part
+                     ! that MUST BE 0
+        print*, eigenvalues(ii)
+      else
+        print*, " ", real(eigenvalues(ii))
+      end if
+    end do
+  else
+    do ii=1, 5, 1
+      if(DEBUG) then ! If we are in debug mode print also the imaginary part
+                     ! that MUST BE 0
+        print*, eigenvalues(ii)
+      else
+        print*, " ", real(eigenvalues(ii))
+      end if
+    end do
   end if
 
   call system("mkdir -p "//folder)
   open(42, file="./"//trim(folder)//"/eigenvalues.csv")
-  if(verbose /= 0) then
-    print*, "    writing on file:"//" ./"//trim(folder)//"/eigenvalues.csv"
-  end if
-    do nn = 1, N+1, 1
-      write(42, *) REAL(eigenvalues(nn))
-    end do
+  print*, "  writing on file:"//" ./"//trim(folder)//"/eigenvalues.csv"
+  do nn = 1, N+1, 1
+    write(42, *) REAL(eigenvalues(nn))
+  end do
   close(42)
 
-  if(.TRUE. .eqv. .FALSE.) then ! I don't need it for the plottings
-    if(verbose /= 0) then
-      print*, ""
-      print*, "+ Computing normalized eigenspacings..."
-    end if
-    allocate(spacings(N))
-    spacings = cmatrix_heigenspacing(H)
-    open(4, file="./"//trim(folder)//"/eigenspacings.csv")
-
-    if(verbose /= 0) then
-      print*, "    writing on file:"//" ./"//trim(folder)//"/eigenspacings.csv"
-    end if
-      do nn = 1, N, 1
-        write(4, *) spacings(nn)
-      end do
-    close(4)
-  end if
-
   open(43, file="./"//trim(folder)//"/eigenvectors.csv")
-  if(verbose /= 0) then
-    print*, "    writing on file:"//" ./"//trim(folder)//"/eigenvectors.csv"
-  end if
-    do nn = 1, N+1, 1
-      write(43, *) REAL(eigenvectors(nn, :))
-    end do
+  print*, "  writing on file:"//" ./"//trim(folder)//"/eigenvectors.csv"
+  do nn = 1, N+1, 1
+    write(43, *) REAL(eigenvectors(nn, :))
+  end do
   close(43)
 
   deallocate(eigenvalues)
   deallocate(eigenvectors)
 
-  if(verbose/=0) then
-    print*, ""
-    print*, "Done!"
-  end if
+  print*, ""
+  print*, "Done!"
+
 end program shroedingertimeindependent
