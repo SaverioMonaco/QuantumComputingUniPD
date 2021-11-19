@@ -275,10 +275,11 @@ module cmatrices
     end if
   end function cmatrix_heigenspacing
 
-  subroutine cmatrix_heigens(cmat,eigenv,eigenh)
+  subroutine cmatrix_heigens(cmat,eigenv,eigenh, success)
     type(cmatrix)                               :: cmat
     complex(kind=8), dimension(:)               :: eigenv
     complex(kind=8), dimension(:,:)             :: eigenh
+    integer, optional                           :: success
 
     ! LAPACK variables
     double precision, dimension(:), allocatable   :: RWORK
@@ -302,6 +303,10 @@ module cmatrices
 
       ! Compute eigenvalues
       call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N,WORK,LWORK,RWORK,INFO)
+
+      if(present(success)) then
+        success = INFO
+      end if
     end if
   end subroutine cmatrix_heigens
 
@@ -314,6 +319,16 @@ module cmatrices
     end do
 
   end subroutine cmatrix_print
+
+  subroutine cmatrix_print_real(cmat)
+    type(cmatrix) :: cmat
+    integer       :: ii
+
+    do ii = 1, ubound(cmat%element, 1)
+      print*, "|", real(cmat%element(ii, :)), "|"
+    end do
+
+  end subroutine cmatrix_print_real
 
   subroutine cmatrix_write(filename, cmat)
     character(len = 25) :: filename
@@ -329,6 +344,26 @@ module cmatrices
 end module cmatrices
 
 module qho
+! ---------------------------------------------------------------------!
+! --------------------------- DOCUMENTATION ---------------------------!
+! ---------------------------------------------------------------------!
+! TYPES: none                                                          !
+! ---------------------------------------------------------------------!
+! FUNCTIONS:                                                           !
+!  + qho_H_init:                                                       !
+!    Initializes the discreet hamiltonian matrix for a quantum         !
+!    harmonic oscillator (QHO)                                         !
+!    INPUT:                                                            !
+!    > L = real, range of x parameter space -L/2<= x <= +L/2           !
+!    > N = integer, discretization of x parameter space: dim(H)=N+1    !
+!    > omega = real, angular frequency                                 !
+!    OUTPUT:                                                           !
+!    > H = cmatrix, hamiltonian of the system                          !
+!                                                                      !
+! ---------------------------------------------------------------------!
+! SUBROUTINES: none                                                    !
+! ---------------------------------------------------------------------!
+! ---------------------------------------------------------------------!
   use cmatrices
 
   contains
@@ -359,13 +394,62 @@ module qho
   end function qho_H_init
 end module qho
 
-program shroedingertimeindependent
+module debug
+! ---------------------------------------------------------------------!
+! --------------------------- DOCUMENTATION ---------------------------!
+! ---------------------------------------------------------------------!
+! TYPES: none                                                          !
+! ---------------------------------------------------------------------!
+! FUNCTIONS: none                                                      !
+! ---------------------------------------------------------------------!
+! SUBROUTINES:                                                         !
+! + debugging                                                          !
+!   INPUT:                                                             !
+!   > condition = logic, if condition is TRUE then run the content of  !
+!                        this function                                 !
+!   > msg = character, optional, message to print                      !
+!   > content = some variable to inspect                               !
+! ---------------------------------------------------------------------!
+! ---------------------------------------------------------------------!
+  contains
 
+  subroutine debugging(condition, msg, content)
+    logical, intent(IN)                 :: condition
+    character(*), intent(IN), optional  :: msg
+    class(*), intent(IN), optional      :: content
+
+    if(condition) then
+      if (present(content)) then
+        select type(content)
+          type is (integer(1))
+            print*, msg, " => [OK], Variable = ", content
+          type is (integer(2))
+            print*, msg, " => [OK], Variable = ", content
+          type is (integer(4))
+            print*, msg, " => [OK], Variable = ", content
+          type is (integer(8))
+            print*, msg, " => [OK], Variable = ", content
+          type is (real(4))
+            print*, msg, " => [OK], Variable = ", content
+          type is (real(8))
+            print*, msg, " => [OK], Variable = ", content
+          type is (logical)
+            print*, msg, " => [OK], Variable = ", content
+        end select
+      else
+        print*, msg, " => [OK]"
+      end if
+    end if
+
+    end subroutine
+end module debug
+
+program shroedingertimeindependent
   use cmatrices
   use qho
 
   real                       :: L, omega
-  integer                    :: ii, N! number of discretized points
+  integer                    :: ii, N   ! number of discretized points
                                         ! -> dimension of H
   type(cmatrix)              :: H
   character(20)              :: folder
@@ -373,19 +457,22 @@ program shroedingertimeindependent
 
   complex(kind=8), dimension(:), allocatable   :: eigenvalues
   complex(kind=8), dimension(:,:), allocatable :: eigenvectors
+  double precision, dimension(:), allocatable  :: spacings
 
   integer :: verbose ! if 0 does not print anything
 
-  read (*,*) L,N,omega,folder,verbose
+  integer :: infoeigens
+  logical :: DEBUG
 
-  write(strL,'(F5.0)') L
-  write(strN,'(i10)') N
-  write(strW,'(F5.0)') omega
+  DEBUG = .FALSE.
+
+  read (*,*) L,N,omega,folder,verbose
 
   if(verbose /= 0) then
     print*, "--------------------------------------------"
     print*, "+        QUANTUM HARMONIC OSCILLATOR       +"
     print*, "--------------------------------------------"
+    print*, "+ Data will be saved in: ./"//trim(folder)
     print*, "+ Lenght of x space (L): ", L
     print*, "+ Number of points  (N): ", N
     print*, "+ Angular frequency (ω): ", omega
@@ -398,7 +485,13 @@ program shroedingertimeindependent
 
   if(verbose /= 0) then
     if(N<3) then
-      call cmatrix_print(H)
+      ! If we are in debug mode print also the imaginary part of H
+      ! H should be real only
+      if(DEBUG) then
+        call cmatrix_print(H)
+      else
+        call cmatrix_print_real(H)
+      end if
     else
       print*, " !!! H matrix is too big to be printed on screen !!!"
     end if
@@ -410,27 +503,80 @@ program shroedingertimeindependent
   allocate(eigenvalues(N+1))
   allocate(eigenvectors(N+1,N+1))
 
-  call cmatrix_heigens(H,eigenvalues,eigenvectors)
+  call cmatrix_heigens(H,eigenvalues,eigenvectors,infoeigens)
+  if(DEBUG) then
+    if(infoeigens == 0) then
+      print*, "  [OK]"
+    else
+      print*, "  Something went wrong here"
+    end if
+  end if
 
   if(verbose /= 0) then
     print*, "  Eigenvalues:"
     if(N<5) then
-      do ii=1, 5, 1
-        print*, eigenvalues(ii)
+      do ii=1, N+1, 1
+        if(DEBUG) then ! If we are in debug mode print also the imaginary part
+                       ! that MUST BE 0
+          print*, eigenvalues(ii)
+        else
+          print*, " ", real(eigenvalues(ii))
+        end if
       end do
     else
-      do ii=1, N+1, 1
-        print*, eigenvalues(ii)
+      do ii=1, 5, 1
+        if(DEBUG) then ! If we are in debug mode print also the imaginary part
+                       ! that MUST BE 0
+          print*, eigenvalues(ii)
+        else
+          print*, " ", real(eigenvalues(ii))
+        end if
       end do
     end if
   end if
 
-  open(42, file='eigenvalues.csv')
+  call system("mkdir -p "//folder)
+  open(42, file="./"//trim(folder)//"/eigenvalues.csv")
+  if(verbose /= 0) then
+    print*, "    writing on file:"//" ./"//trim(folder)//"/eigenvalues.csv"
+  end if
     do nn = 1, N+1, 1
       write(42, *) REAL(eigenvalues(nn))
     end do
   close(42)
 
+  if(.TRUE. .eqv. .FALSE.) then ! I don't need it for the plottings
+    if(verbose /= 0) then
+      print*, ""
+      print*, "+ Computing normalized eigenspacings..."
+    end if
+    allocate(spacings(N))
+    spacings = cmatrix_heigenspacing(H)
+    open(4, file="./"//trim(folder)//"/eigenspacings.csv")
+
+    if(verbose /= 0) then
+      print*, "    writing on file:"//" ./"//trim(folder)//"/eigenspacings.csv"
+    end if
+      do nn = 1, N, 1
+        write(4, *) spacings(nn)
+      end do
+    close(4)
+  end if
+
+  open(43, file="./"//trim(folder)//"/eigenvectors.csv")
+  if(verbose /= 0) then
+    print*, "    writing on file:"//" ./"//trim(folder)//"/eigenvectors.csv"
+  end if
+    do nn = 1, N+1, 1
+      write(43, *) REAL(eigenvectors(nn, :))
+    end do
+  close(43)
+
   deallocate(eigenvalues)
   deallocate(eigenvectors)
+
+  if(verbose/=0) then
+    print*, ""
+    print*, "Done!"
+  end if
 end program shroedingertimeindependent
