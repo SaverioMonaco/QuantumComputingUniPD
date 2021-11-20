@@ -275,7 +275,7 @@ module cmatrices
     end if
   end function cmatrix_heigenspacing
 
-  subroutine cmatrix_heigens(cmat,eigenv,eigenh, success)
+  subroutine cmatrix_heigens(cmat,eigenv,eigenh,success)
     type(cmatrix)                               :: cmat
     complex(kind=8), dimension(:)               :: eigenv
     complex(kind=8), dimension(:,:)             :: eigenh
@@ -481,7 +481,7 @@ program shroedingertimeindependent
     print*, "--------------------------------------------"
     stop
   end if
-  
+
   ! CHECK IF PARAMETERS ARE IN THE RIGHT RANGE
   if(L <= 0 .OR. N<3 .OR. omega <=0) then
     print*, "+ !!! INVALID PARAMETER RANGES !!!"
@@ -520,6 +520,7 @@ program shroedingertimeindependent
   allocate(eigenvectors(N+1,N+1))
 
   call cmatrix_heigens(H,eigenvalues,eigenvectors,infoeigens)
+  ! CHECK IF EIGENVALUE/EIGENVECTORS ARE COMPUTED PROPERLY
   if(DEBUG) then
     if(infoeigens == 0) then
       print*, "  [OK]"
