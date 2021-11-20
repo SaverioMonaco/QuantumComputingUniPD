@@ -389,7 +389,7 @@ L 0 2
     </g>
     <g id="text_5">
      <!-- Log(N) -->
-     <g transform="translate(204.825781 280.276563)scale(0.1 -0.1)">
+     <g transform="translate(204.825781 280.276563)scale(0.0 -0.0)">
       <defs>
        <path d="M 9.8125 72.90625 
 L 19.671875 72.90625 
@@ -1058,7 +1058,7 @@ L -2 0
      </g>
     </g>
     <g id="text_13">
-     <!-- Log($E_n$) -->
+     <!-- Log($err(E_n)$) -->
      <g transform="translate(17.4 161.73)rotate(-90)scale(0.1 -0.1)">
       <defs>
        <path d="M 16.890625 72.90625 

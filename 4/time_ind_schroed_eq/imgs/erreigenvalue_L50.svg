@@ -903,7 +903,7 @@ L -2 0
      </g>
     </g>
     <g id="text_11">
-     <!-- Log($E_n$) -->
+     <!-- Log($err(E_n)$) -->
      <g transform="translate(17.4 161.73)rotate(-90)scale(0.1 -0.1)">
       <defs>
        <path d="M 16.890625 72.90625 
