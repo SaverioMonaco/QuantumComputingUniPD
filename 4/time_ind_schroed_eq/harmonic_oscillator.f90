@@ -302,7 +302,7 @@ module cmatrices
       LWORK = min(LWMAX, int(WORK(1)))
 
       ! Compute eigenvalues
-      call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N,WORK,LWORK,RWORK,INFO)
+      call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N, WORK,LWORK,RWORK,INFO)
 
       if(present(success)) then
         success = INFO
