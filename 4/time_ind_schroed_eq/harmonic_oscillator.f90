@@ -107,14 +107,6 @@ module cmatrices
     module procedure cmatrix_trace
   end interface
 
-  interface operator(.Eigenv.)
-    module procedure cmatrix_heigenvalues
-  end interface
-
-  interface operator(.Eigenspacing.)
-    module procedure cmatrix_heigenspacing
-  end interface
-
   contains
 
   function cmatrix_trace(cmat) result(trace)
@@ -228,56 +220,9 @@ module cmatrices
     cmat_adj = cmatrix_init( conjg(transpose(cmat%element)) )
   end function cmatrix_adjoint
 
-  function cmatrix_heigenvalues(cmat) result(eigens)
-    type(cmatrix), intent(IN)                   :: cmat
-    double precision, dimension(:), allocatable :: eigens, RWORK
-    integer                                     :: INFO, LWORK
-    integer                                     :: N
-    integer, parameter                          :: LWMAX = 100000
-    complex*16                                  :: WORK(LWMAX)
-
-    ! Check if matrix is squared
-    if(cmat%dim(1) == cmat%dim(2)) then
-      N = cmat%dim(1)
-
-      allocate(eigens(N))
-      allocate(RWORK(3*N-2))
-
-      ! Compute optimal size of workspace
-      LWORK = -1
-      call ZHEEV('N', 'U', N, cmat%element, N, eigens, WORK, LWORK, RWORK, INFO)
-      LWORK = min(LWMAX, int(WORK(1)))
-
-      ! Compute eigenvalues
-      call ZHEEV('N', 'U', N, cmat%element, N, eigens, WORK, LWORK, RWORK, INFO)
-    end if
-  end function cmatrix_heigenvalues
-
-  function cmatrix_heigenspacing(cmat) result(spacing)
-    type(cmatrix), intent(IN)                   :: cmat
-    double precision, dimension(:), allocatable :: eigens, spacing
-    double precision                            :: inverseaveragelambda
-    integer                                     :: ii, N
-
-    ! Check if matrix is squared
-    if(cmat%dim(1) == cmat%dim(2)) then
-      N = cmat%dim(1)
-      allocate(eigens(N))
-      allocate(spacing(N-1))
-
-      eigens = cmatrix_heigenvalues(cmat)
-      inverseaveragelambda = (N-1)/ (eigens(N)-eigens(1))
-
-      do ii = 1, N-1, 1
-        spacing(ii) = inverseaveragelambda * (eigens(ii+1) - eigens(ii))
-      end do
-
-    end if
-  end function cmatrix_heigenspacing
-
-  subroutine cmatrix_heigens(cmat,eigenv,eigenh,success)
+  subroutine cmatrix_herm_eigens(cmat,eigenv,eigenh,success)
     type(cmatrix)                               :: cmat
-    complex(kind=8), dimension(:)               :: eigenv
+    real*8, dimension(:)                        :: eigenv
     complex(kind=8), dimension(:,:)             :: eigenh
     integer, optional                           :: success
 
@@ -297,18 +242,19 @@ module cmatrices
 
       ! Compute optimal size of workspace
       LWORK = -1
+      eigenh = cmat%element
 
-      call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N,WORK,LWORK,RWORK,INFO)
+      call ZHEEV('Vectors', 'U', N, eigenh, N, eigenv, WORK,LWORK,RWORK,INFO)
       LWORK = min(LWMAX, int(WORK(1)))
 
       ! Compute eigenvalues
-      call ZGEEV('Vectors', 'Vectors', N, cmat%element, N, eigenv, eigenh, N, VR, N, WORK,LWORK,RWORK,INFO)
+      call ZHEEV('Vectors', 'U', N, eigenh, N, eigenv, WORK,LWORK,RWORK,INFO)
 
       if(present(success)) then
         success = INFO
       end if
     end if
-  end subroutine cmatrix_heigens
+  end subroutine cmatrix_herm_eigens
 
   subroutine cmatrix_print(cmat)
     type(cmatrix) :: cmat
@@ -456,7 +402,7 @@ program shroedingertimeindependent
   integer                    :: iostat ! Checking types in READ(*,*)
   external::zgeev
 
-  complex(kind=8), dimension(:), allocatable   :: eigenvalues
+  real*8, dimension(:), allocatable            :: eigenvalues
   complex(kind=8), dimension(:,:), allocatable :: eigenvectors
   double precision, dimension(:), allocatable  :: spacings
 
@@ -519,7 +465,7 @@ program shroedingertimeindependent
   allocate(eigenvalues(N+1))
   allocate(eigenvectors(N+1,N+1))
 
-  call cmatrix_heigens(H,eigenvalues,eigenvectors,infoeigens)
+  call cmatrix_herm_eigens(H,eigenvalues,eigenvectors,infoeigens)
   ! CHECK IF EIGENVALUE/EIGENVECTORS ARE COMPUTED PROPERLY
   if(DEBUG) then
     if(infoeigens == 0) then
