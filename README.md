@@ -64,5 +64,37 @@ Make sure to add both:
   end function matrix_multiplication2
 ```
          
-#### 2. Checkpoints, Documentation, Derived Types.
+#### 2. Checkpoints, Documentation, Derived Types [80/100].
+The debug function was not quite he asked, this is the correct version:
+
+```Fortran
+subroutine debugging(condition, msg, content)
+    logical, intent(IN)                 :: condition
+    character(*), intent(IN), optional  :: msg
+    class(*), intent(IN), optional      :: content
+
+    if(condition) then
+      if (present(content)) then
+        select type(content)
+          type is (integer(1))
+            print*, msg, " => [OK], Variable = ", content
+          type is (integer(2))
+            print*, msg, " => [OK], Variable = ", content
+          type is (integer(4))
+            print*, msg, " => [OK], Variable = ", content
+          type is (integer(8))
+            print*, msg, " => [OK], Variable = ", content
+          type is (real(4))
+            print*, msg, " => [OK], Variable = ", content
+          type is (real(8))
+            print*, msg, " => [OK], Variable = ", content
+          type is (logical)
+            print*, msg, " => [OK], Variable = ", content
+        end select
+      else
+        print*, msg, " => [OK]"
+      end if
+    end if
+end subroutine
+```
 #### 3. Scaling of the matrix-matrix multiplication, Eigenproblem, Random Matrix Theory.
