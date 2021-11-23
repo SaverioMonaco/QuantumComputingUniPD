@@ -98,3 +98,5 @@ subroutine debugging(condition, msg, content)
 end subroutine
 ```
 #### 3. Scaling of the matrix-matrix multiplication, Eigenproblem, Random Matrix Theory.
+
+#### 4. Continuous time-ind. S.E. (Study of the eigenvalues and -vectors of the Harmonic oscillator)
