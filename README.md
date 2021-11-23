@@ -3,9 +3,11 @@
 
 ### Weekly exercises in `Fortran` about numerical methods for quantum computing.
 #### 1. Setup, Number Precision, Test Performance. [60/100]
-     I forgot to add and compare the other version of the loop method of matrix multiplication. Make sure to add both:
+
+I forgot to add and compare the other version of the loop method of matrix multiplication. 
+Make sure to add both:
          
-     ```Fortran          
+```Fortran          
 	  function matrix_multiplication(mat_A, mat_B) result(mat_C)
 	    real*4, dimension(:,:)                         :: mat_A, mat_B
 	    real*4, dimension(size(mat_A,1),size(mat_B,2)) :: mat_C
@@ -66,7 +68,7 @@
 	      end do
 	    end if
 	  end function matrix_multiplication2
-     ```
+```
          
 #### 2. Checkpoints, Documentation, Derived Types.
 #### 3. Scaling of the matrix-matrix multiplication, Eigenproblem, Random Matrix Theory.
