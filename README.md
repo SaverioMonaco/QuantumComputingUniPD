@@ -97,7 +97,7 @@ subroutine debugging(condition, msg, content)
     end if
 end subroutine
 ```
-#### 3. Scaling of the matrix-matrix multiplication, Eigenproblem, Random Matrix Theory.
+#### 3. Scaling of the matrix-matrix multiplication, Eigenproblem, Random Matrix Theory. [100/100] :star2:
 
 #### 4. Time-ind. S.E. (Study of the eigenvalues and -vectors of the Harmonic oscillator)
 
