@@ -149,4 +149,7 @@ program fft_test
 
     call dfftw_destroy_plan(plan)
 
+    print*, "+"
+    print*, "+-------------------------------------------"
+    print*, "+-------------------------------------------"
 end program fft_test
