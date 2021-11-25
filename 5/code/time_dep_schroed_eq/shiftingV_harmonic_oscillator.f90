@@ -455,7 +455,7 @@ program shroedingertimedependent
   integer :: infoeigens
   logical :: DEBUG
 
-  DEBUG = .TRUE.
+  DEBUG = .FALSE.
 
   print*, "--------------------------------------------"
   print*, "+   TIME DEPENDENT SCHROEDINGER EQUATION   +"
@@ -495,7 +495,6 @@ program shroedingertimedependent
     stop
   end if
 
-  print*, "+"
   print*, "+ Data will be saved in: ./"//trim(folder)
   print*, "+ Lenght of x space     (Lx): ", Lx
   print*, "+ Lenght of p space     (Lp): ", Lp
@@ -525,11 +524,22 @@ program shroedingertimedependent
   allocate(eigenvectors(N+1,N+1))
   call cmatrix_herm_eigens(H,eigenvalues,eigenvectors,infoeigens)
   allocate(eigenvector(N+1, Nt+1))
-  eigenvector(:,0) = eigenvectors(:,lev)
+  eigenvector(:,1) = eigenvectors(:,lev+1)
+
   print*, "[DONE]"
 
   if(DEBUG) then
-    print*, ""
+    print*, "+"
+    print*, "+ Eigenvalues:"
+    do ii=1,5,1
+      print*, "+ ", eigenvalues(ii)
+    end do
+    print*, "+    ..."
+  end if
+
+
+  if(DEBUG) then
+    print*, "+"
     print*, "+ Writing initial state wavefunction at:"
     print*, "+   ./"//trim(folder)//"/DEBUG_PSI0.csv"
 
@@ -537,7 +547,7 @@ program shroedingertimedependent
 
     open(42, file="./"//trim(folder)//"/DEBUG_PSI0.csv")
     do ii=1,N+1,1
-      write(42, *) eigenvector(ii,0)
+      write(42, *) eigenvector(ii,1)
     end do
     close(42)
     print*, "+ [DONE]"
@@ -550,7 +560,7 @@ program shroedingertimedependent
     print*, "+"
     print*, "+ Psi(x) lev:", lev
     do ii=1,5,1
-      print*, "+ ", eigenvector(ii,0)
+      print*, "+ ", eigenvectors(ii,lev+1)
     end do
     print*, "+   ..."
   end if
@@ -571,7 +581,7 @@ program shroedingertimedependent
     current_t = current_t + T/Nt
 
     ! Evolve Ux Ψx
-    call qho_split_U1(eigenvector(:,tt-1), tmp_x1, current_t, T, N, Lx)
+    call qho_split_U1(eigenvector(:,tt), tmp_x1, current_t, T, N, Lx)
 
     ! Transform Ψx -> Ψk
     call qho_split_fourier(tmp_x1, tmp_k1)
@@ -585,7 +595,7 @@ program shroedingertimedependent
     ! Evolve Ux Ψx
     call qho_split_U1(tmp_x2, tmp_x3, current_t, T, N, Lx)
 
-    eigenvector(:,tt) = tmp_x3
+    eigenvector(:,tt+1) = tmp_x3
   end do
   print*, "+ [DONE]"
   ! ###########################################################################
@@ -594,15 +604,18 @@ program shroedingertimedependent
 
   print*, "+"
   print*, "+------------------------------------------+"
-  print*, "+ Writing on file: ./"//trim(folder)//"/wavefunc.csv"
+  print*, "+ Writing on files: ./"//trim(folder)//"/*_wavefunc.csv"
 
   call system("mkdir -p "//folder)
-  open(42, file="./"//trim(folder)//"/wavefunc.csv")
 
-  do ii=1, N+1, 1
-    write(42, *) eigenvector(:,ii)
+  open(22, file="./"//trim(folder)//"/REAL_wavefunc.csv")
+  open(23, file="./"//trim(folder)//"/IMAG_wavefunc.csv")
+  do tt=1, Nt+1, 1
+    write(22, *) REAL(eigenvector(:,tt))
+    write(23, *) AIMAG(eigenvector(:,tt))
   end do
-  close(42)
+  close(22)
+  close(23)
 
   print*, "+ [DONE]"
   print*, "+------------------------------------------+"
