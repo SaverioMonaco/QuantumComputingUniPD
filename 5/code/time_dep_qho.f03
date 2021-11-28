@@ -59,19 +59,6 @@ module q_util
     normpsi = (SUM(ABS(psi)**2 * step))
 
   end function q_util_norm
-
-  function q_util_ExpectedValue(psi, obs, step)result(E)
-    implicit none
-    double complex, dimension(:), allocatable   :: psi
-    double precision, dimension(:), allocatable :: obs
-    double precision                            :: step, E
-    integer                                     :: ii
-
-    E = 0
-    do ii = 1, size(psi)
-        E = E + abs(psi(ii))**2 *obs(ii)* step
-    end do
-end function q_util_ExpectedValue
 end module
 
 program shroedingertimedependent
@@ -107,9 +94,9 @@ program shroedingertimedependent
   integer*8 :: dfft_plan, idfft_plan, jdfft_plan
 
   ! General
-  DEBUG = .FALSE.
+  DEBUG =  .FALSE.
   ! Too check if first step matches with theory
-  DEBUG2 = .TRUE.
+  DEBUG2 = .FALSE.
 
   print*, "--------------------------------------------"
   print*, "+   TIME DEPENDENT SCHROEDINGER EQUATION   +"
@@ -184,22 +171,21 @@ program shroedingertimedependent
 
   call debugging(DEBUG,msg="+ Reordering ps")
 
+  ! Making the directory
+  call system("mkdir -p "//folder)
+
   ! set filenames
-  open(11, file = "E_x.csv")
-  open(12, file = "sigma_x.csv")
-  open(13, file = "E_p.csv")
-  open(14, file = "sigma_p.csv")
-  open(4,  file = "real_wave.csv")
-  open(5,  file = "imag_wave.csv")
+  open(4,  file = "./"//trim(folder)//"/real_wave.csv")
+  open(5,  file = "./"//trim(folder)//"/imag_wave.csv")
 
   ! Writing on a file the first step to see if it matches with theory
   if(DEBUG2) then
-    open(40,  file = "psix0.csv")
-    open(41,  file = "psix1.csv")
-    open(42,  file = "psik1.csv")
-    open(43,  file = "psik2.csv")
-    open(44,  file = "psix2.csv")
-    open(45,  file = "psix3.csv")
+    open(40,  file = "./"//trim(folder)//"/psix0.csv")
+    open(41,  file = "./"//trim(folder)//"/psix1.csv")
+    open(42,  file = "./"//trim(folder)//"/psik1.csv")
+    open(43,  file = "./"//trim(folder)//"/psik2.csv")
+    open(44,  file = "./"//trim(folder)//"/psix2.csv")
+    open(45,  file = "./"//trim(folder)//"/psix3.csv")
   end if
   call debugging(DEBUG,msg="+ Files opened")
 
@@ -207,13 +193,13 @@ program shroedingertimedependent
   allocate(psi_k1(Nx), psi_k2(Nx), psi_k3(Nx))
   allocate(Uv(Nx),Ut(Nx))
 
-  call debugging(DEBUG,msg="+ Allocating psi-s")
+  call debugging(DEBUG,msg="+ psi-s allocated")
 
   ! DFFTW plans generation
   call dfftw_plan_dft_1d(dfft_plan,  Nx, psi_x1, psi_k1, FFTW_FORWARD, FFTW_MEASURE)
   call dfftw_plan_dft_1d(idfft_plan, Nx, psi_k2, psi_x2, FFTW_BACKWARD, FFTW_MEASURE)
   call dfftw_plan_dft_1d(jdfft_plan,  Nx, psi_x3, psi_k3, FFTW_FORWARD, FFTW_MEASURE)
-  call debugging(DEBUG,msg="+ Launching dfftw_plan_dft_1d")
+  call debugging(DEBUG,msg="+ Launched dfftw_plan_dft_1d")
 
   ! Set the initial state of the wavefunction:
   do xx = 1, Nx
