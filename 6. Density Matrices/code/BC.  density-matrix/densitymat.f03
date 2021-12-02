@@ -167,18 +167,21 @@ module densmat
 
   function densmat_pure_init(N, d, SEP, DEBUG) result(PHI)
     integer       :: N, d, SEP
+    integer*8     :: nbytes
     type(qsystem) :: PHI
     logical       :: DEBUG
 
     if(SEP == 1) then
       PHI = densmat_pure_separable(N, d)
+      nbytes = 16*(N*d)
       if(DEBUG) then
-        print*, "+ Allocating", 16*N*d, "bytes"
+        print*, "+ Allocating", nbytes, "bytes"
       end if
     else if(SEP == 0) then
       PHI = densmat_pure_unseparable(N, d)
+      nbytes = 16*(d**N)
       if(DEBUG) then
-        print*, "+ Allocating", 16*(N**d), "bytes"
+        print*, "+ Allocating", nbytes, "bytes"
       end if
     else
       print*, "+ Unvalid state, exiting .... "
@@ -219,36 +222,46 @@ program density_matrices
   real    :: randomstate_fl
   type(qsystem) :: PHI
 
+  ! Density matrix
+  double complex, dimension(:,:), allocatable :: rho
+  double precision                            :: trace
+
   ! Debugging
   logical :: DEBUG
   integer :: iostat
 
   ! Loop variables
-  integer :: ii
+  integer :: ii, jj
+
+  ! LAPACK variables
+  double precision, dimension(:), allocatable   :: RWORK
+  integer                                       :: INFO, LWORK
+  integer, parameter                            :: LWMAX = 100000
+  complex*16                                    :: WORK(LWMAX)
+  complex(kind=8), dimension(:,:), allocatable  :: VR
+
+  double precision, dimension(:), allocatable   :: eigenv
+
+  double complex, dimension(:), allocatable :: rho1, rho2
 
   DEBUG = .TRUE.
+  N   = 2
+  SEP = 0
   print*, "--------------------------------------------"
-  print*, "+       MULTI-SYSTEMS REPRESENTATION       +"
+  print*, "+              DENSITY MATRIX              +"
   print*, "+------------------------------------------+"
-  print*, "+ A: This program allocates random         +"
-  print*, "+    wavefunction for pure-state system    +"
-  print*, "+    either separable or unseparable       +"
+  print*, "+ B: This program creates the density      +"
+  print*, "+    matrix for a 2-body system            +"
   print*, "+------------------------------------------+"
-  print*, "+ N: Number of systems (integer)           +"
   print*, "+ d: Dimension of Hilber spaces (integer)  +"
-  print*, "+ SEP: Separability (integer):             +"
-  print*, "+      1 -> Separable                      +"
-  print*, "+      0 -> Non-separable                  +"
   print*, "+------------------------------------------+"
-  write(*,"(A)",advance='no') " + Type N, d, SEP: "
-  read (*,*, iostat=iostat) N, d, SEP
+  write(*,"(A)",advance='no') " + Type d:"
+  read (*,*, iostat=iostat) d
 
   ! Check if parameters are the right types
   if(iostat /= 0) then
     print*, "+ !!! INVALID PARAMETER TYPES !!!          +"
-    print*, "+ N = integer                              +"
     print*, "+ d = integer                              +"
-    print*, "+ SEP = integer                            +"
     print*, "+ Exiting...                               +"
     print*, "+------------------------------------------+"
     print*, "+------------------------------------------+"
@@ -256,9 +269,9 @@ program density_matrices
   end if
 
   ! Check if parameters are in the right ranges
-  if((N < 2 .OR. d < 2) .OR. .NOT.(SEP == 0 .OR. SEP == 1)) then
+  if(d < 2) then
     print*, "+ !!! INVALID PARAMETER RANGES !!!         +"
-    print*, "+ (N > 1, d > 1, S = {0,1})                +"
+    print*, "+ (d > 1)                                  +"
     print*, "+ Exiting...                               +"
     print*, "+------------------------------------------+"
     print*, "+------------------------------------------+"
@@ -279,30 +292,88 @@ program density_matrices
   end if
 
   call debugging(DEBUG,"Allocating system")
-  ! We initialize the qsystem, allocating either Nxd (if separable), or d^N
+  ! We initialize the qsystem, allocating d^2 double complex
   PHI = densmat_pure_init(N,d,SEP,DEBUG)
 
   ! Generating states
   call densmat_genstates(PHI)
   call debugging(DEBUG,"Wavefunction generated")
-  if(PHI%separability .eqv. .TRUE.) then
-    do ii = 1, 2, 1
-      print*, "+ ",ii,":", PHI%waves(ii)
+
+  print*, "+                                          +"
+  print*, "+ Examples of states using tens. notation: +"
+  do ii = 1, 6, 1
+    call random_number(randomstate_fl)
+    randomstate = FLOOR((d**N)*randomstate_fl)
+    write(*,"(A)",advance='no') " +"
+    write(*,'(A,ES0.2,A,ES0.2,A)', advance='no') "  (", real(PHI%waves(randomstate)), " + i*", aimag(PHI%waves(randomstate)), ")"
+    write(*,"(A)",advance='no') " |"
+    write(*,'(*(I4))', advance='no') basechange_to(d,randomstate,N)
+    write(*,"(A)",advance='yes') " >"
+  end do
+
+  print*, "+                                          +"
+  print*, "+ Computing density matrix:                +"
+
+  allocate(rho(d**N,d**N))
+
+  do ii = 1, d**N, 1
+    do jj = 1, d**N, 1
+      rho(ii,jj) = PHI%waves(ii)*conjg(PHI%waves(jj))
     end do
-    do ii = size(PHI%waves) - 2, size(PHI%waves), 1
-      print*, "+ ",ii,":", PHI%waves(ii)
+  end do
+  call debugging(DEBUG,"Density matrix initiated")
+
+  print*, "+ Computing trace:                         +"
+  trace = 0
+  do ii=1, d**N, 1
+   trace = trace + real(rho(ii,ii))
+  end do
+  print*, "+ PROPERTY 1: Trace:", trace
+  print*, "+   (it should be 1)                       +"
+  print*, "+ PROPERTY 2: Eigenvalues                  +"
+  print*, "+   (we should get only one non-zero       +"
+  print*, "+   eigenvalue =1):                        +"
+
+  allocate(RWORK(3*(d**N)-2))
+  allocate(VR(d**N,d**N))
+  allocate(eigenv(d**N))
+  ! Compute optimal size of workspace
+  LWORK = -1
+
+  call ZHEEV('N', 'U', d**N, rho, d**N, eigenv, WORK,LWORK,RWORK,INFO)
+  LWORK = min(LWMAX, int(WORK(1)))
+
+  ! Compute eigenvalues
+  call ZHEEV('N', 'U', d**N, rho, d**N, eigenv, WORK,LWORK,RWORK,INFO)
+
+  write(*,'(A)',advance='no') " +   "
+  do ii = 1, 5, 1
+    write(*,'(A,ES0.2,A)', advance='no') "  ", eigenv(d**N - ii + 1), ", "
+  end do
+  print*, ""
+
+  print*, "+ Computing the matrix of the left and     +"
+  print*, "+ right systems:                           +"
+
+  allocate(rho1(d),rho2(d))
+  do ii = 1, d, 1
+    rho1(ii) = 0
+    rho2(ii) = 0
+    do jj = 1, d, 1
+      rho1(ii) = rho1(ii) + rho(ii,jj)
+      rho2(ii) = rho2(ii) + rho(jj,ii)
     end do
-  end if
+  end do
 
-  if(PHI%separability .eqv. .FALSE.) then
-    print*, "+ Examples of states using tensorial notation:"
-    do ii = 1, 6, 1
-      call random_number(randomstate_fl)
-      randomstate = FLOOR((d**N)*randomstate_fl)
-      print*, "+", PHI%waves(randomstate), "|", basechange_to(d,randomstate,N) ,">"
-    end do
-  end if
-
-
-
+  print*, "+    RHO1"
+  do ii = 1, 3, 1
+    write(*,'(A,ES0.2,A,ES0.2,A)', advance='yes') " +     (", real(rho1(ii)), " + i*", aimag(rho1(ii)), ")"
+  end do
+  print*, "+     ..."
+  print*, "+ "
+  print*, "+    RHO2"
+  do ii = 1, 3, 1
+    write(*,'(A,ES0.2,A,ES0.2,A)', advance='yes') " +     (", real(rho2(ii)), " + i*", aimag(rho2(ii)), ")"
+  end do
+  print*, "+     ..."
 end program density_matrices

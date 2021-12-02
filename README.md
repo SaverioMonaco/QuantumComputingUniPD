@@ -99,6 +99,8 @@ end subroutine
 ```
 #### 3. Scaling of the matrix-matrix multiplication, Eigenproblem, Random Matrix Theory. [100/100] :star2:
 
-#### 4. Time-ind. S.E. (Study of the eigenvalues and -vectors of the Harmonic oscillator) 
+#### 4. Time-ind. S.E. (Study of the eigenvalues and -vectors of the Harmonic oscillator) [100/100] :star2:
 
 #### 5. Time-dep. S.E. (Study of a 'shifting' Harmonic Oscillator) (DOES NOT WORK)
+
+#### 6. Density Matrices
