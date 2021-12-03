@@ -120,12 +120,27 @@ module densmat
   !   > DEBUG_: logical, prints bytes allocated (can be too many)        !
   !   OUTPUT:                                                            !
   !   > PHI: qsystem                                                     !
+  !                                                                      !
+  ! + densmat_computerho1                                                !
+  !   Compute partial trace                                              !
+  !   INPUT                                                              !
+  !   > rho: double complex, dimension(d**2,d**2), density matrix        !
+  !   > d: integer, size of each Hilbert space                           !
+  !   OUTPUT:                                                            !
+  !   > rho1: double complex, dimension(d,d), density matrix             !
+  !                                                                      !
   ! ---------------------------------------------------------------------!
   ! SUBROUTINES:                                                         !
   ! + densmat_genstates                                                  !
   !   Generate random numbers (dxN or d^N double complex numbers)        !
-  !  INPUT:                                                              !
-  !  > PHI: qsystem                                                      !
+  !   INPUT:                                                             !
+  !   > PHI: qsystem                                                     !
+  !                                                                      !
+  ! + densmat_readcoeffs                                                 !
+  !   Read coefficient from terminal input                               !
+  !   INPUT:                                                             !
+  !   > PHI: qsystem                                                     !
+  !                                                                      !
   ! ---------------------------------------------------------------------!
   ! ---------------------------------------------------------------------!
   type qsystem
@@ -167,18 +182,21 @@ module densmat
 
   function densmat_pure_init(N, d, SEP, DEBUG) result(PHI)
     integer       :: N, d, SEP
+    integer*8     :: nbytes
     type(qsystem) :: PHI
     logical       :: DEBUG
 
     if(SEP == 1) then
       PHI = densmat_pure_separable(N, d)
+      nbytes = 16*(N*d)
       if(DEBUG) then
-        print*, "+ Allocating", 16*N*d, "bytes"
+        print*, "+ Allocating", nbytes, "bytes"
       end if
     else if(SEP == 0) then
       PHI = densmat_pure_unseparable(N, d)
+      nbytes = 16*(d**N)
       if(DEBUG) then
-        print*, "+ Allocating", 16*(N**d), "bytes"
+        print*, "+ Allocating", nbytes, "bytes"
       end if
     else
       print*, "+ Unvalid state, exiting .... "
@@ -207,6 +225,49 @@ module densmat
     ! Assigning
     PHI%waves(:) =  PHI%waves(:)/(sqrt(norm))
   end subroutine
+
+  subroutine densmat_readcoeffs(PHI)
+    type(qsystem) :: PHI
+    double precision :: real_coeff, imag_coeff, norm
+    integer :: ii,jj
+
+    print*, "+ Assign coefficiens:"
+    do jj = 0, PHI%d**PHI%N - 1, 1
+      ii = jj
+      write(*,"(A)",advance='no') " + Coefficient for state"
+      write(*,"(A)",advance='no') "  |"
+      write(*,'(*(I4))', advance='no') basechange_to(PHI%d,ii,PHI%N)
+      write(*,"(A)",advance='no') " > : (real imag)  "
+      read (*,*) real_coeff, imag_coeff
+      PHI%waves(jj + 1) = dcmplx(real_coeff,imag_coeff)
+    end do
+
+    write(*,"(A)",advance='no') " + Normalizing..."
+    ! Normalizing
+    norm = SUM(ABS(PHI%waves(:))**2)
+    ! Assigning
+    PHI%waves(:) =  PHI%waves(:)/(sqrt(norm))
+    print*, "  Done!"
+
+  end subroutine
+
+  function densmat_computerho1(rho,d) result(rho1)
+    integer :: d
+    double complex, dimension(:,:) :: rho
+    double complex, dimension(:,:), allocatable :: rho1
+    integer :: ii,jj,kk
+
+    allocate(rho1(d,d))
+
+    do ii = 1, d
+      do jj = 1, d
+        rho1(ii,jj) = 0
+        do kk = 0, d - 1
+          rho1(ii,jj) = rho1(ii,jj) + rho(d*(ii-1) + 1 + kk, d*(jj-1) + 1 + kk)
+        end do
+      end do
+    end do
+  end function
 end module densmat
 
 program density_matrices
@@ -215,40 +276,49 @@ program density_matrices
 
   implicit none
 
-  integer :: N, d, SEP, randomstate
-  real    :: randomstate_fl
+  integer :: N, d, SEP
   type(qsystem) :: PHI
+
+  ! Density matrix
+  double complex, dimension(:,:), allocatable :: rho
+  double precision                            :: trace
 
   ! Debugging
   logical :: DEBUG
   integer :: iostat
 
   ! Loop variables
-  integer :: ii
+  integer :: ii, jj
+
+  ! LAPACK variables
+  double precision, dimension(:), allocatable   :: RWORK
+  integer                                       :: INFO, LWORK
+  integer, parameter                            :: LWMAX = 100000
+  complex*16                                    :: WORK(LWMAX)
+  complex(kind=8), dimension(:,:), allocatable  :: VR
+
+  double precision, dimension(:), allocatable   :: eigenv
+
+  double complex, dimension(:,:), allocatable :: rho_1
 
   DEBUG = .TRUE.
+  d   = 2
+  SEP = 0
   print*, "--------------------------------------------"
-  print*, "+       MULTI-SYSTEMS REPRESENTATION       +"
+  print*, "+                  QUBITS                  +"
   print*, "+------------------------------------------+"
-  print*, "+ A: This program allocates random         +"
-  print*, "+    wavefunction for pure-state system    +"
-  print*, "+    either separable or unseparable       +"
+  print*, "+ D: This program creates the density      +"
+  print*, "+    matrix for a 2-body system            +"
   print*, "+------------------------------------------+"
-  print*, "+ N: Number of systems (integer)           +"
-  print*, "+ d: Dimension of Hilber spaces (integer)  +"
-  print*, "+ SEP: Separability (integer):             +"
-  print*, "+      1 -> Separable                      +"
-  print*, "+      0 -> Non-separable                  +"
+  print*, "+ N: Number of QuBits (integer)            +"
   print*, "+------------------------------------------+"
-  write(*,"(A)",advance='no') " + Type N, d, SEP: "
-  read (*,*, iostat=iostat) N, d, SEP
+  write(*,"(A)",advance='no') " + Type N: "
+  read (*,*, iostat=iostat) N
 
   ! Check if parameters are the right types
   if(iostat /= 0) then
     print*, "+ !!! INVALID PARAMETER TYPES !!!          +"
     print*, "+ N = integer                              +"
-    print*, "+ d = integer                              +"
-    print*, "+ SEP = integer                            +"
     print*, "+ Exiting...                               +"
     print*, "+------------------------------------------+"
     print*, "+------------------------------------------+"
@@ -256,9 +326,9 @@ program density_matrices
   end if
 
   ! Check if parameters are in the right ranges
-  if((N < 2 .OR. d < 2) .OR. .NOT.(SEP == 0 .OR. SEP == 1)) then
+  if(N < 2) then
     print*, "+ !!! INVALID PARAMETER RANGES !!!         +"
-    print*, "+ (N > 1, d > 1, S = {0,1})                +"
+    print*, "+ (N > 1)                                  +"
     print*, "+ Exiting...                               +"
     print*, "+------------------------------------------+"
     print*, "+------------------------------------------+"
@@ -279,30 +349,67 @@ program density_matrices
   end if
 
   call debugging(DEBUG,"Allocating system")
-  ! We initialize the qsystem, allocating either Nxd (if separable), or d^N
+  ! We initialize the qsystem, allocating d^2 double complex
   PHI = densmat_pure_init(N,d,SEP,DEBUG)
 
-  ! Generating states
-  call densmat_genstates(PHI)
-  call debugging(DEBUG,"Wavefunction generated")
-  if(PHI%separability .eqv. .TRUE.) then
-    do ii = 1, 2, 1
-      print*, "+ ",ii,":", PHI%waves(ii)
+  ! Assigning manually coefficients
+  call densmat_readcoeffs(PHI)
+
+  print*, "+                                          +"
+  print*, "+ Computing density matrix:                +"
+
+  allocate(rho(d**N,d**N))
+
+  do ii = 1, d**N, 1
+    do jj = 1, d**N, 1
+      rho(ii,jj) = PHI%waves(ii)*conjg(PHI%waves(jj))
     end do
-    do ii = size(PHI%waves) - 2, size(PHI%waves), 1
-      print*, "+ ",ii,":", PHI%waves(ii)
+  end do
+
+  print*, "+                                          +"
+  print*, "+ CHECKING DENSITY MATRIX PROPERTIES       +"
+  trace = 0
+  do ii=1, d**N, 1
+   trace = trace + real(rho(ii,ii))
+  end do
+  print*, "+ - PROPERTY 1: Trace:", trace
+  print*, "+     (it should be 1)                     +"
+  print*, "+ - PROPERTY 2: Eigenvalues                +"
+  print*, "+     (we should get only one non-zero     +"
+  print*, "+      eigenvalue =1):                     +"
+
+  allocate(RWORK(3*(d**N)-2))
+  allocate(VR(d**N,d**N))
+  allocate(eigenv(d**N))
+  ! Compute optimal size of workspace
+  LWORK = -1
+
+  call ZHEEV('N', 'U', d**N, rho, d**N, eigenv, WORK,LWORK,RWORK,INFO)
+  LWORK = min(LWMAX, int(WORK(1)))
+
+  ! Compute eigenvalues
+  call ZHEEV('N', 'U', d**N, rho, d**N, eigenv, WORK,LWORK,RWORK,INFO)
+
+  write(*,'(A)',advance='no') " +   "
+  do ii = 1, 3, 1
+    write(*,'(A,ES0.2,A)', advance='no') "  ", eigenv(d**N - ii + 1), ", "
+  end do
+  print*, ""
+  deallocate(RWORK, VR, eigenv)
+
+  ! Computing the partial trace only for a two-bodies system
+  if(N==2) then
+    print*, "+ - PROPERTY 3: Marginalizing density      +"
+    print*, "+               matrices                   +"
+    allocate(rho_1(d,d))
+
+    rho_1 = densmat_computerho1(rho,d)
+    print*, "+   RHO1:                                  +"
+    trace = 0
+    do ii = 1, d
+      trace = trace + real(rho_1(ii,ii))
     end do
+    print*, "+     - Trace:", trace
   end if
-
-  if(PHI%separability .eqv. .FALSE.) then
-    print*, "+ Examples of states using tensorial notation:"
-    do ii = 1, 6, 1
-      call random_number(randomstate_fl)
-      randomstate = FLOOR((d**N)*randomstate_fl)
-      print*, "+", PHI%waves(randomstate), "|", basechange_to(d,randomstate,N) ,">"
-    end do
-  end if
-
-
 
 end program density_matrices

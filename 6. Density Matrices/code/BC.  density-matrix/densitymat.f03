@@ -120,12 +120,27 @@ module densmat
   !   > DEBUG_: logical, prints bytes allocated (can be too many)        !
   !   OUTPUT:                                                            !
   !   > PHI: qsystem                                                     !
+  !                                                                      !
+  ! + densmat_computerho1                                                !
+  !   Compute partial trace                                              !
+  !   INPUT                                                              !
+  !   > rho: double complex, dimension(d**2,d**2), density matrix        !
+  !   > d: integer, size of each Hilbert space                           !
+  !   OUTPUT:                                                            !
+  !   > rho1: double complex, dimension(d,d), density matrix             !
+  !                                                                      !
   ! ---------------------------------------------------------------------!
   ! SUBROUTINES:                                                         !
   ! + densmat_genstates                                                  !
   !   Generate random numbers (dxN or d^N double complex numbers)        !
-  !  INPUT:                                                              !
-  !  > PHI: qsystem                                                      !
+  !   INPUT:                                                             !
+  !   > PHI: qsystem                                                     !
+  !                                                                      !
+  ! + densmat_readcoeffs                                                 !
+  !   Read coefficient from terminal input                               !
+  !   INPUT:                                                             !
+  !   > PHI: qsystem                                                     !
+  !                                                                      !
   ! ---------------------------------------------------------------------!
   ! ---------------------------------------------------------------------!
   type qsystem
@@ -210,6 +225,49 @@ module densmat
     ! Assigning
     PHI%waves(:) =  PHI%waves(:)/(sqrt(norm))
   end subroutine
+
+  subroutine densmat_readcoeffs(PHI)
+    type(qsystem) :: PHI
+    double precision :: real_coeff, imag_coeff, norm
+    integer :: ii,jj
+
+    print*, "+ Assign coefficiens:"
+    do jj = 0, PHI%d**PHI%N - 1, 1
+      ii = jj
+      write(*,"(A)",advance='no') " + Coefficient for state"
+      write(*,"(A)",advance='no') "  |"
+      write(*,'(*(I4))', advance='no') basechange_to(PHI%d,ii,PHI%N)
+      write(*,"(A)",advance='no') " > : (real imag)  "
+      read (*,*) real_coeff, imag_coeff
+      PHI%waves(jj + 1) = dcmplx(real_coeff,imag_coeff)
+    end do
+
+    write(*,"(A)",advance='no') " + Normalizing..."
+    ! Normalizing
+    norm = SUM(ABS(PHI%waves(:))**2)
+    ! Assigning
+    PHI%waves(:) =  PHI%waves(:)/(sqrt(norm))
+    print*, "  Done!"
+
+  end subroutine
+
+  function densmat_computerho1(rho,d) result(rho1)
+    integer :: d
+    double complex, dimension(:,:) :: rho
+    double complex, dimension(:,:), allocatable :: rho1
+    integer :: ii,jj,kk
+
+    allocate(rho1(d,d))
+
+    do ii = 1, d
+      do jj = 1, d
+        rho1(ii,jj) = 0
+        do kk = 0, d - 1
+          rho1(ii,jj) = rho1(ii,jj) + rho(d*(ii-1) + 1 + kk, d*(jj-1) + 1 + kk)
+        end do
+      end do
+    end do
+  end function
 end module densmat
 
 program density_matrices
@@ -242,7 +300,7 @@ program density_matrices
 
   double precision, dimension(:), allocatable   :: eigenv
 
-  double complex, dimension(:), allocatable :: rho1, rho2
+  double complex, dimension(:,:), allocatable :: rho1
 
   DEBUG = .TRUE.
   N   = 2
@@ -250,8 +308,8 @@ program density_matrices
   print*, "--------------------------------------------"
   print*, "+              DENSITY MATRIX              +"
   print*, "+------------------------------------------+"
-  print*, "+ B: This program creates the density      +"
-  print*, "+    matrix for a 2-body system            +"
+  print*, "+ BC: This program creates the density     +"
+  print*, "+     matrix for a 2-body system           +"
   print*, "+------------------------------------------+"
   print*, "+ d: Dimension of Hilber spaces (integer)  +"
   print*, "+------------------------------------------+"
@@ -355,25 +413,13 @@ program density_matrices
   print*, "+ Computing the matrix of the left and     +"
   print*, "+ right systems:                           +"
 
-  allocate(rho1(d),rho2(d))
-  do ii = 1, d, 1
-    rho1(ii) = 0
-    rho2(ii) = 0
-    do jj = 1, d, 1
-      rho1(ii) = rho1(ii) + rho(ii,jj)
-      rho2(ii) = rho2(ii) + rho(jj,ii)
-    end do
+  allocate(rho1(d,d))
+  rho1 = densmat_computerho1(rho,d)
+  trace = 0
+  do ii = 1, d
+    trace = trace + real(rho1(ii,ii))
   end do
 
-  print*, "+    RHO1"
-  do ii = 1, 3, 1
-    write(*,'(A,ES0.2,A,ES0.2,A)', advance='yes') " +     (", real(rho1(ii)), " + i*", aimag(rho1(ii)), ")"
-  end do
-  print*, "+     ..."
-  print*, "+ "
-  print*, "+    RHO2"
-  do ii = 1, 3, 1
-    write(*,'(A,ES0.2,A,ES0.2,A)', advance='yes') " +     (", real(rho2(ii)), " + i*", aimag(rho2(ii)), ")"
-  end do
-  print*, "+     ..."
+  print*, "+    trace RHO1: ", trace
+
 end program density_matrices
