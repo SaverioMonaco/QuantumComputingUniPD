@@ -1,0 +1,6 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{function }\PYG{n}{densmat\PYGZus{}pure\PYGZus{}init}\PYG{p}{(}\PYG{n}{N}\PYG{p}{,} \PYG{n}{d}\PYG{p}{,} \PYG{n}{SEP}\PYG{p}{,} \PYG{n}{DEBUG}\PYG{p}{)} \PYG{k}{result}\PYG{p}{(}\PYG{n+nb}{system}\PYG{p}{)}
+\PYG{k}{subroutine }\PYG{n}{densmat\PYGZus{}genstates}\PYG{p}{(}\PYG{n+nb}{system}\PYG{p}{)}
+\PYG{k}{subroutine }\PYG{n}{densmat\PYGZus{}readcoeffs}\PYG{p}{(}\PYG{n+nb}{system}\PYG{p}{)}
+\PYG{k}{function }\PYG{n}{densmat\PYGZus{}computerho1}\PYG{p}{(}\PYG{n+nb}{system}\PYG{p}{,}\PYG{n}{d}\PYG{p}{)} \PYG{k}{result}\PYG{p}{(}\PYG{n}{rho1}\PYG{p}{)}
+\end{Verbatim}

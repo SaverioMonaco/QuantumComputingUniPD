@@ -1,0 +1,14 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{function }\PYG{n}{basechange\PYGZus{}to}\PYG{p}{(}\PYG{n}{b\PYGZus{}to}\PYG{p}{,} \PYG{n}{number}\PYG{p}{,} \PYG{n}{N}\PYG{p}{)}
+                       \PYG{k}{result}\PYG{p}{(}\PYG{n}{number\PYGZus{}b\PYGZus{}to}\PYG{p}{)}
+
+\PYG{k+kt}{integer} \PYG{k+kd}{::} \PYG{n}{b\PYGZus{}to}\PYG{p}{,} \PYG{n}{number}\PYG{p}{,} \PYG{n}{N}\PYG{p}{,} \PYG{n}{ii}
+\PYG{k+kt}{integer}\PYG{p}{,} \PYG{k}{dimension}\PYG{p}{(}\PYG{n}{N}\PYG{p}{)} \PYG{k+kd}{::} \PYG{n}{number\PYGZus{}b\PYGZus{}to}
+
+\PYG{n}{number\PYGZus{}b\PYGZus{}to} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{o}{*}\PYG{n}{number\PYGZus{}b\PYGZus{}to}
+\PYG{k}{do }\PYG{n}{ii} \PYG{o}{=} \PYG{l+m+mi}{1}\PYG{p}{,} \PYG{n}{N}\PYG{p}{,} \PYG{l+m+mi}{1}
+  \PYG{n}{number\PYGZus{}b\PYGZus{}to}\PYG{p}{(}\PYG{n}{N} \PYG{o}{\PYGZhy{}} \PYG{n}{ii} \PYG{o}{+} \PYG{l+m+mi}{1}\PYG{p}{)} \PYG{o}{=} \PYG{n+nb}{modulo}\PYG{p}{(}\PYG{n}{number}\PYG{p}{,} \PYG{n}{b\PYGZus{}to}\PYG{p}{)}
+  \PYG{n}{number} \PYG{o}{=} \PYG{n}{number}\PYG{o}{/}\PYG{n}{b\PYGZus{}to}
+\PYG{k}{end do}
+\PYG{k}{end function}	
+\end{Verbatim}

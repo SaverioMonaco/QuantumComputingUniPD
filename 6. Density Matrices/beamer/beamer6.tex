@@ -2,13 +2,15 @@
 %\documentclass[pt12,externalviewer]{beamer}
 
 \usepackage{amssymb}
+\usepackage{minted}
 %\usepackage{rotating}
 %\usepackage{amsmath}
 %\usepackage{tikz}
 %\usepackage{beamergraphics}
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
-
+\usepackage{multicol}
+\usepackage{svg}
 %\usepackage[absolute,overlay]{textpos}
 %\usepackage{pdfcolparallel}
 
@@ -66,7 +68,7 @@
 \newcommand{\etal}{{\em et al.}}
 
 
-\title[Density Matrices \& QBits]{Density Matrices \& QBits}
+\title[Density Matrices \& QuBits]{Density Matrices \& QuBits}
 
 \author[Saverio Monaco]{\large{Saverio Monaco}\bigskip\\ Quantum Information and Computing}
 \date{\today}
@@ -93,21 +95,129 @@ Dipartimento di Fisica e Astronomia\\
 \titlepage
 \end{frame}
 
-
+\newcommand{\ket}[1]{\left|#1\right>}
+\newcommand{\bra}[1]{\left<#1\right|}
 
 \begin{frame}[label=Theory]
 \frametitle{Theory}
+\framesubtitle{Wavefunction}
 \tableofcontents[pausesections]
+\textbf{Goal of the exercise:} numerical handling of pure N-body wavefunctions.\bigskip\\
+Assume N particles each described by a d-dimensional Hilbert space $\left(\varphi_i\in\mathcal{H}^d\right)$.\medskip\\
+There are two possible systems:
+\begin{itemize}
+	\item (general) \textbf{Unseparable case:} 
+	$$\Psi = \sum_{a_1,a_2,...,a_N}C_{a_1,a_2,...,a_N}\ket{a_1}\otimes\ket{a_2}\otimes...\otimes\ket{a_N}\qquad dim\equiv d^N\hspace*{6cm}\text{}$$
+	\item \textbf{Separable case:} (no interactions between particles)
+	$$\Psi = \bigotimes_{i=1}^N\varphi_i\qquad dim\equiv d\times N\hspace*{6cm}\text{}$$
+\end{itemize}
 \end{frame}
 
-\begin{frame}[label=Code development]
-	\frametitle{Code development}
+\begin{frame}[label=Theory]
+	\frametitle{Theory}
+	\framesubtitle{Density matrix}
 	\tableofcontents[pausesections]
+	It is possible to construct an operator $\hat{\rho}$ out of the total wavefunction $\Psi$ described before:
+	$$\rho = \ket{\Psi}\bra{\Psi} = \sum_{a_1,..,a_N}\sum_{a_1^\prime,..,a_N^\prime}\,C_{a_1,..,a_N}C_{a_1^\prime,..,a_N^\prime}\ket{a_1,..,a_N}\bra{a_1^\prime,..,a_N^\prime}$$
+	\textbf{Properties:}
+	\begin{itemize}
+		\item hermitian $\leftrightarrow\,\,\, \rho = \rho^\dagger$
+		\item $Tr(\rho) = 1$
+		\item Eigenvalues of $\rho$ are: $\{1,0,...,0\}$
+    \end{itemize}
+    Other properties:
+    \begin{itemize}
+    	\item $\rho^2 = \rho$
+    	\item $<\rho> \,= Tr(\rho^2) \leq 1$
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile,label=Code development]
+	\frametitle{Code development}
+	\framesubtitle{Derived type and related functions}
+	\tableofcontents[pausesections]
+	\textbf{Custom derived type:}\vspace{-1cm}\\
+	\begin{figure}[!h]\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=4mm, gobble=2]{Fortran}
+		type qsystem
+		  integer :: N ! Number of systems
+		  integer :: d ! number of states
+		  logical :: separability ! Wether the whole system is separable
+		  double complex, dimension(:), allocatable   :: PSI ! Total WF
+		  double complex, dimension(:,:), allocatable :: rho ! Density matrix
+		end type qsystem
+	\end{minted}
+    \end{figure}
+	\textbf{Related functions:}\vspace{-1cm}\\
+	\begin{figure}[!h]\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=4mm, gobble=3]{Fortran}
+			function densmat_pure_init(N, d, SEP, DEBUG) result(system)
+			subroutine densmat_genstates(system)
+			subroutine densmat_readcoeffs(system)
+			function densmat_computerho1(system,d) result(rho1)
+		\end{minted}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}[fragile,label=Code development]
+	\frametitle{Code development}
+	\framesubtitle{Indices}
+	\tableofcontents[pausesections]
+	A explicit way to visualize the total wavefunction (non-separable case):
+	
+	$$\begin{align}
+	\Psi = &a_0\ket{0,0,...,0} + a_1 \ket{0,0,...,1} + ... \\
+	     &... + a_{d-1}\ket{0,0,...,d-1} + a_d \ket{0,0,...,1,0}+ ...
+	\end{align}$$
+
+	Getting the index of the array from the eigenvectors combination and viceversa is just a \textbf{change of base}:
+	
+	\begin{multicols}{2}
+		\begin{figure}[!h]\begin{minted}[fontsize=\tiny, framesep=4mm, gobble=3]{Fortran}
+			function basechange_to(b_to, number, N) 
+			                       result(number_b_to)
+			                       
+			integer :: b_to, number, N, ii
+			integer, dimension(N) :: number_b_to
+			
+			number_b_to = 0*number_b_to
+			do ii = 1, N, 1
+			  number_b_to(N - ii + 1) = modulo(number, b_to)
+			  number = number/b_to
+			end do
+			end function	
+			\end{minted}
+		\end{figure}
+		\columnbreak
+		\begin{figure}[!h]\begin{minted}[fontsize=\tiny, framesep=4mm, gobble=3]{Fortran}
+			function basechange_from(b_from, number_from, N) 
+			                         result(number_b10)
+			                         
+			integer :: b_from, number_b10, N, ii
+			integer, dimension(N) :: number_from
+			
+			do ii = 1, N, 1
+			  number_b10 = number_b10 + 
+			               number_from(N - ii + 1)*
+			               b_from**(ii - 1)
+			end do
+			end function
+			\end{minted}
+		\end{figure}
+	\end{multicols}
 \end{frame}
 
 \begin{frame}[label=Results]
 	\frametitle{Results}
 	\tableofcontents[pausesections]
+	\begin{itemize}
+		\item \textbf{Correctness}: Trace and eigenvalues of $\rho$, (and it's partial trace as well) were computed to check the correctness. The results given match the theory up to some numerical error.
+		\item \textbf{Stability}: The program may give and error when trying to allocate too much memory. The number of elements of $\rho$ is $d^{2N}$ and each element occupies 16 bytes (\texttt{double complex})
+		\begin{figure}[h]
+		\centering
+		\hspace{-1cm}\includesvg[width=.6\textwidth]{../imgs/maxalloc.svg}
+		\end{figure}
+	\end{itemize}
+	\tiny{Data was generated using a Ubuntu machine with 8GB of RAM}
 \end{frame}
 
 \include{sslide}
