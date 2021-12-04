@@ -1,6 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{x}{			function densmat\PYGZus{}pure\PYGZus{}init(N, d, SEP, DEBUG) result(system)}
-\PYG{x}{			subroutine densmat\PYGZus{}genstates(system)}
-\PYG{x}{			subroutine densmat\PYGZus{}readcoeffs(system)}
-\PYG{x}{			function densmat\PYGZus{}computerho1(system,d) result(rho1)}
-\end{Verbatim}

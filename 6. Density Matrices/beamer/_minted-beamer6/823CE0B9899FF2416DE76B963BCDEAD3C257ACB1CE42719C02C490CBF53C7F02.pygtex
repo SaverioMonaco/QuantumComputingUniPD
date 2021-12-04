@@ -1,9 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k}{type }\PYG{n}{qsystem}
-  \PYG{k+kt}{integer} \PYG{k+kd}{::} \PYG{n}{N} \PYG{c}{! Number of systems}
-  \PYG{k+kt}{integer} \PYG{k+kd}{::} \PYG{n}{d} \PYG{c}{! number of states}
-  \PYG{k+kt}{logical} \PYG{k+kd}{::} \PYG{n}{separability} \PYG{c}{! Wether the whole system is separable}
-  \PYG{k+kt}{double complex}\PYG{p}{,} \PYG{k}{dimension}\PYG{p}{(:),} \PYG{k}{allocatable}   \PYG{k+kd}{::} \PYG{n}{PSI} \PYG{c}{! Total WF}
-  \PYG{k+kt}{double complex}\PYG{p}{,} \PYG{k}{dimension}\PYG{p}{(:,:),} \PYG{k}{allocatable} \PYG{k+kd}{::} \PYG{n}{rho} \PYG{c}{! Density matrix}
-\PYG{k}{end type }\PYG{n}{qsystem}
-\end{Verbatim}
