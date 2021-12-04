@@ -1,6 +1,8 @@
 .ipynb_checkpoints
 OLD/
 heavy/
+svg-inkscape/
+_minted*/
 *.aux
 *.glo
 *.idx
@@ -26,3 +28,4 @@ heavy/
 *.nav
 *.snm
 *.synctex.gz
+*.vrb
