@@ -101,7 +101,7 @@ end subroutine
 
 #### 4. Time-ind. S.E. (Study of the eigenvalues and -vectors of the Harmonic oscillator) [100/100] :star2:
 
-#### 5. Time-dep. S.E. (Study of a 'shifting' Harmonic Oscillator) ![#f03c15]((DOES NOT WORK)) [100/100] :star2:
+#### 5. Time-dep. S.E. (Study of a 'shifting' Harmonic Oscillator) (DOES NOT WORK) [100/100] :star2:
 
 #### 6. Density Matrices
 
