@@ -5,7 +5,10 @@
 \usepackage{minted}
 %\usepackage{rotating}
 %\usepackage{amsmath}
-%\usepackage{tikz}
+\usepackage{tikz}
+\newcommand\encircle[1]{%
+	\tikz[baseline=(X.base)] 
+	\node (X) [draw, shape=circle, inner sep=0] {\strut #1};}
 %\usepackage{beamergraphics}
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
@@ -101,18 +104,126 @@ Dipartimento di Fisica e Astronomia\\
 \begin{frame}[label=Theory]
 \frametitle{Theory}
 \tableofcontents[pausesections]
+\textbf{1-D Ising Model:}
+\begin{center}
+\begin{tikzpicture}
+	\filldraw[color=red!60, fill=red!5, very thick](0,0) circle (.2);
+	\filldraw[color=red!60, fill=red!5, very thick](1,0) circle (.2);
+	\filldraw[color=blue!60, fill=blue!5, very thick](2,0) circle (.2);
+	\filldraw[color=red!60, fill=red!5, very thick](3,0) circle (.2);
+	\filldraw[color=blue!60, fill=blue!5, very thick](4,0) circle (.2);
+	\filldraw[color=red!60, fill=red!5, very thick](5,0) circle (.2);
+	\draw [-stealth](-1,0) -- (6,0)node[anchor=west]{N=6};
+	\draw [-stealth,color=red, thick](-.4,-.4) -- (.4,.4);
+	\draw [-stealth,color=red, thick](1-.4,-.4) -- (1+.4,.4);
+	\draw [-stealth,color=blue, thick](2+.4,+.4) -- (2-.4,-.4);
+	\draw [-stealth,color=red, thick](3-.4,-.4) -- (3+.4,.4);
+	\draw [-stealth,color=blue, thick](4+.4,+.4) -- (4-.4,-.4);
+	\draw [-stealth,color=red, thick](5-.4,-.4) -- (5+.4,.4);
+	
+	\draw [-stealth,color=red,thick](6,.8) -- (6,1.2)node[anchor=west]{$\lambda$};
+\end{tikzpicture}
+\end{center}
+\begin{equation*}
+	H = {\lambda\sum_i^N \sigma_z^i}-{\sum_i^{N-1}\sigma_x^{i+1}\sigma_x^i}
+\end{equation*}
+where
+\begin{equation*}
+	\sigma_z^i = \underbrace{\mathbb{I}\otimes\mathbb{I}\otimes...\otimes\mathbb{I}}_{i-1}\otimes\begin{pmatrix}
+		1 & 0 \\ 0 & -1
+	\end{pmatrix}\otimes\underbrace{\mathbb{I}\otimes...\otimes\mathbb{I}}_{N-i}
+\end{equation*}
+\begin{equation*}
+	\sigma_x^i = \underbrace{\mathbb{I}\otimes\mathbb{I}\otimes...\otimes\mathbb{I}}_{i-1}\otimes\begin{pmatrix}
+		0 & 1 \\ 1 & 0
+	\end{pmatrix}\otimes\underbrace{\mathbb{I}\otimes...\otimes\mathbb{I}}_{N-i}
+\end{equation*}
 \end{frame}
 
 \begin{frame}[fragile,label=Code development]
 	\frametitle{Code development}
+	\framesubtitle{Building the Hamiltonian}
+	\fontsize{6pt}{10pt}\selectfont
 	\tableofcontents[pausesections]
-	
+	\begin{equation*}
+		H = \underbrace{\lambda\sum_i^N \sigma_z^i}_A - \underbrace{\sum_i^{N-1}\sigma_x^{i+1}\sigma_x^i}_B
+	\end{equation*}\vspace*{-.5cm}
+	\begin{figure}[!h]
+		\begin{minted}[fontsize=\tiny, framesep=4mm, gobble=3]{Fortran}
+			function ising_init_H(N,lambda) result(H)
+			  integer   :: N
+			  double precision :: lambda
+			  double precision, dimension(:,:), allocatable :: H, int_A, int_B
+			  integer*16 :: ii,jj,kk,ll
+			  allocate(H(2**N,2**N))
+		\end{minted}
+	\end{figure}\text{ }\vspace*{-.5cm}\\
+	\begin{itemize}
+		\item[{\encircle{A}}]\vspace*{-.42cm}
+		\begin{minted}[fontsize=\tiny, gobble=3]{Fortran}
+			do ii = 1, N, 1
+			  do jj = 1, 2**N, 1
+			    H(jj,jj) = H(jj,jj) + -2*(modulo( (jj-1)/int(2**(N-ii)),2) ) +1
+			  end do
+			end do
+		\end{minted}
+	    \item[{\encircle{B}}]
+	    \begin{minted}[fontsize=\tiny, gobble=6]{Fortran}
+	     do ii = 1, N-1, 1
+	    	  do kk = 0,2**(ii-1)-1,1
+	    	    do jj=1,2**(N-ii),1
+	    	      int_A(kk*(2**(N-ii+1))  + 2**(N-ii)+jj, kk*(2**(N-ii+1))  + jj) = 1
+	    	      int_A(kk*(2**(N-ii+1))  + jj, kk*(2**(N-ii+1))  + 2**(N-ii)+jj) = 1
+	    	    end do
+	    	  end do
+	    	  do kk = 0,2**(ii)-1,1
+	    	    do jj=1,2**(N-ii-1),1
+	    	      int_B(kk*(2**(N-ii)) + 2**(N-ii-1)+jj, kk*(2**(N-ii)) + jj) = 1
+	    	      int_B(kk*(2**(N-ii)) + jj, kk*(2**(N-ii)) + 2**(N-ii-1)+jj) = 1
+	    	    end do
+	    	  end do
+	    	  H = H - matmul(int_B,int_A)
+	     end do
+	    \end{minted}
+	     
+	\end{itemize}
 \end{frame}
 
-\begin{frame}[label=Results]
+\begin{frame}[fragile,label=Results]
 	\frametitle{Results}
+	\framesubtitle{Energy spectra}
 	\tableofcontents[pausesections]
-	
+	\begin{figure}[h]
+		\centering
+		\hspace{-1cm}\includesvg[width=.55\textwidth]{../code/imgs/Ns_lvl0}
+		\hspace{-1cm}\includesvg[width=.55\textwidth]{../code/imgs/MFA}
+	\end{figure}
+\begin{figure}[h]
+	\centering
+	\makebox[\textwidth][c]{
+	\includesvg[width=.43\textwidth]{../code/imgs/Ns_lvl1}
+	\hspace{-.5cm}\includesvg[width=.43\textwidth]{../code/imgs/Ns_lvl2}
+	\hspace{-.5cm}\includesvg[width=.43\textwidth]{../code/imgs/Ns_lvl3} }
+\end{figure}
+\end{frame}
+
+
+\begin{frame}[fragile,label=Results]
+	\frametitle{Results}
+	\framesubtitle{Memory limits}
+	\tableofcontents[pausesections]
+	Given an hamiltonian\vspace*{-.5cm}\\
+	\begin{figure}[!h]
+		\begin{minted}[fontsize=\footnotesize, framesep=4mm, gobble=3]{Fortran}
+			double precision, dimension(:,:), allocatable :: H
+		\end{minted}
+	\end{figure}
+	Maximum number of spins: $N_{max}=13$\vspace*{-.5cm}\\
+	\begin{figure}[h]
+		\centering
+		\hspace{-1cm}\includesvg[width=.6\textwidth]{../code/imgs/maxalloc.svg}
+	\end{figure}
+\tiny{Data was generated using a Ubuntu machine with 8GB of RAM}
 \end{frame}
 
 \include{sslide}
