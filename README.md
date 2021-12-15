@@ -103,6 +103,8 @@ end subroutine
 
 #### 5. Time-dep. S.E. (Study of a 'shifting' Harmonic Oscillator) (DOES NOT WORK) [100/100] :star2:
 
-#### 6. Density Matrices
+#### 6. Density Matrices [80/100]
 
 #### 7. Ising Model
+
+#### 8. Renormalization Group

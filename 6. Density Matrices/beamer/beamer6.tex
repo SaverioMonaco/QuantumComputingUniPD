@@ -118,7 +118,7 @@ There are two possible systems:
 	\framesubtitle{Density matrix}
 	\tableofcontents[pausesections]
 	It is possible to construct an operator $\hat{\rho}$ out of the total wavefunction $\Psi$ described before:
-	$$\rho = \ket{\Psi}\bra{\Psi} = \sum_{a_1,..,a_N}\sum_{a_1^\prime,..,a_N^\prime}\,C_{a_1,..,a_N}C_{a_1^\prime,..,a_N^\prime}\ket{a_1,..,a_N}\bra{a_1^\prime,..,a_N^\prime}$$
+	$$\rho = \ket{\Psi}\bra{\Psi} = \sum_{a_1,..,a_N}\sum_{a_1^\prime,..,a_N^\prime}\,C_{a_1,..,a_N}C^*_{a_1^\prime,..,a_N^\prime}\ket{a_1,..,a_N}\bra{a_1^\prime,..,a_N^\prime}$$
 	\textbf{Properties:}
 	\begin{itemize}
 		\item hermitian $\leftrightarrow\,\,\, \rho = \rho^\dagger$
@@ -211,7 +211,7 @@ There are two possible systems:
 	\tableofcontents[pausesections]
 	\begin{itemize}
 		\item \textbf{Correctness}: Trace and eigenvalues of $\rho$, (and it's partial trace as well) were computed to check the correctness. The results given match the theory up to some numerical error.
-		\item \textbf{Stability}: The program may give and error when trying to allocate too much memory. The number of elements of $\rho$ is $d^{2N}$ and each element occupies 16 bytes (\texttt{double complex})
+		\item \textbf{Stability}: The program may give errors when trying to allocate too much memory. The number of elements of $\rho$ is $d^{2N}$ and each element occupies 16 bytes (\texttt{double complex})
 		\begin{figure}[h]
 		\centering
 		\hspace{-1cm}\includesvg[width=.6\textwidth]{../imgs/maxalloc.svg}
