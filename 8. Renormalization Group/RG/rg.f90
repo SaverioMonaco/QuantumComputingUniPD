@@ -227,7 +227,7 @@ program ising_rg
 
   double precision, dimension(:), allocatable :: evls
   double precision                            :: oldevl
-  integer*8                                   :: size
+  integer*8                                   :: sizeofspace
 
   character(20) :: folder, file
 
@@ -287,6 +287,7 @@ program ising_rg
   print*, "+                                          +"
 
   HN = ising_init_H(N,lambda)
+  sizeofspace = N
 
   if(DEBUG) then
     print*, "+ First Hamiltonian initialized            +"
@@ -300,6 +301,7 @@ program ising_rg
     end if
 
     allocate(H2N(2**(2*N),2**(2*N)))
+    sizeofspace = 2*sizeofspace
 
     if(it==1) then
       H2N = mat_tensor_I(HN) + I_tensor_mat(HN) + init_interaction_H(N)
@@ -311,8 +313,16 @@ program ising_rg
     call findkEigenvalue(H2N, evls, 2**N, P)
 
     HN = matmul(matmul(transpose(P),H2N),P)
-
-    write(1,*) evls(1)
+ 
+    if(abs(oldevl - evls(1)/sizeofspace)<1d-10) then
+      print*, "+ Algorithm has reached convergence"
+      stop
+    end if
+    
+    write(1,*) evls(1)/sizeofspace
+    oldevl = evls(1)/sizeofspace
+    
+    
 
     deallocate(H2N,evls)
 
