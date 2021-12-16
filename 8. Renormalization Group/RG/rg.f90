@@ -316,7 +316,7 @@ program ising_rg
  
     if(abs(oldevl - evls(1)/sizeofspace)<1d-10) then
       print*, "+ Algorithm has reached convergence"
-      stop
+      !stop
     end if
     
     write(1,*) evls(1)/sizeofspace
