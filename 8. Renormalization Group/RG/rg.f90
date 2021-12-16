@@ -127,11 +127,11 @@ module rg
     HR = 0.d0
 
     do kk = 0, 2**(N-1)-1, 1
-      HL(2+(2*k),1+(2*k)) = 1
-      HL(1+(2*k),2+(2*k)) = 1
+      HL(2+(2*kk),1+(2*kk)) = 1
+      HL(1+(2*kk),2+(2*kk)) = 1
 
-      HR(2**(N-1)+1+k,1+k) = 1
-      HR(1+k,2**(N-1)+1+k) = 1
+      HR(2**(N-1)+1+kk,1+kk) = 1
+      HR(1+kk,2**(N-1)+1+kk) = 1
     end do
 
     allocate(Hin(2**(2*N),2**(2*N)))
@@ -227,6 +227,7 @@ program ising_rg
 
   double precision, dimension(:), allocatable :: evls
   double precision                            :: oldevl
+  integer*8                                   :: size
 
   character(20) :: folder, file
 
@@ -311,16 +312,8 @@ program ising_rg
 
     HN = matmul(matmul(transpose(P),H2N),P)
 
-    write(1,*) evls(1)/(N*2**(it+1))
+    write(1,*) evls(1)
 
-    if(it > 3) then
-      if(abs((evls(1)/(N*2**(it+1)))-oldevl)< 1d-16) then
-        print*, "+ Algorithm converged at iteration", it
-        stop
-      end if
-    end if
-    oldevl = evls(1)/(N*2**(it+1))
-    print*, evls(1)/(N*2**(it+1))
     deallocate(H2N,evls)
 
   end do
