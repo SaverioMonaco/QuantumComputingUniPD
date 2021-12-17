@@ -3,6 +3,19 @@ module isingmod
   ! ---------------------------------------------------------------------!
   ! --------------------------- DOCUMENTATION ---------------------------!
   ! ---------------------------------------------------------------------!
+  ! TYPES: none                                                          !
+  ! ---------------------------------------------------------------------!
+  ! FUNCTIONS:                                                           !
+  ! + ising_init_H:                                                      !
+  !     Initialize the Hamiltonian of the ising model                    !
+  !     INPUT:                                                           !
+  !       > N = integer, number of spins                                 !
+  !       > lambda = double precision, strenght of the external field    !
+  !     OUTPUT:                                                          !
+  !       > H = double precision, dimension(:,:), Hamiltonian matrix     !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! ---------------------------------------------------------------------!
   contains
 
   function ising_init_H(N,lambda) result(H)
@@ -49,6 +62,37 @@ module isingmod
 end module
 
 module tensor_prod
+  ! ---------------------------------------------------------------------!
+  ! --------------------------- DOCUMENTATION ---------------------------!
+  ! ---------------------------------------------------------------------!
+  ! TYPES: none                                                          !
+  ! ---------------------------------------------------------------------!
+  ! FUNCTIONS:                                                           !
+  ! + mat_tensor_I:                                                      !
+  !     Performs tensor product between a matrix and an identity matrix  !
+  !     of equal dimension                                               !
+  !     INPUT:                                                           !
+  !       > mat = double precision, dimension(:,:), matrix               !
+  !     OUTPUT:                                                          !
+  !       > matL = double precision, dimension(:,:), output matrix       !
+  !                                                                      !
+  ! + I_tensor_mat:                                                      !
+  !     Performs tensor product between an identity matrix and a matrix  !
+  !     of equal dimension                                               !
+  !     INPUT:                                                           !
+  !       > mat = double precision, dimension(:,:), matrix               !
+  !     OUTPUT:                                                          !
+  !       > matL = double precision, dimension(:,:), output matrix       !
+  !                                                                      !
+  ! + tens_prod:                                                         !
+  !     Performs the tensor product between the two matrices             !
+  !     INPUT:                                                           !
+  !       > A, B = double precision, dimension(:,:), matrices            !
+  !     OUTPUT:                                                          !
+  !       > AoB = double precision, dimension(:,:), output matrix        !
+  !                                                                      !
+  ! ---------------------------------------------------------------------!
+  ! ---------------------------------------------------------------------!
   contains
 
   function mat_tensor_I(mat) result(matL)
@@ -116,11 +160,28 @@ end module tensor_prod
 module rg
   use tensor_prod
   contains
-
-  ! Performs I \ocircle sigma^x_N \ocircle sigma^x_{N+1} \ocircle I
-  function init_interaction_H(N) result(Hin)
-    double precision, dimension(:,:), allocatable :: Hin, HL, HR
-    integer :: kk
+  ! ---------------------------------------------------------------------!
+  ! --------------------------- DOCUMENTATION ---------------------------!
+  ! ---------------------------------------------------------------------!
+  ! TYPES: none                                                          !
+  ! ---------------------------------------------------------------------!
+  ! SUBROUTINES:                                                         !
+  ! + init_interaction_H                                                 !
+  !     Initialize the interaction matrix between the two subsystems     !                                                    !
+  !       > N: number of spins for each subsystems                       !
+  !       > HL, HR: double precision, dimension(:,:), interaction matrix !
+  !                                                                      !
+  ! + diagonalize_H                                                      !
+  !     Diagonalize the hamiltonian and get the projections matrix       !
+  !       > H: double precision, dimension(:,:), hamiltonian of size 2N  !
+  !       > eigenvalues: double precision, dimension(:), eigenvalues     !
+  !       > nvec: integer, number of eigenvector to store                !
+  !       > eigenvectors: double precision, dimension(:,:), projection   !
+  ! ---------------------------------------------------------------------!
+  ! ---------------------------------------------------------------------!
+  subroutine init_interaction_H(N,HL,HR)
+    double precision, dimension(:,:), allocatable :: HL, HR
+    integer :: kk, N
 
     allocate(HL(2**(N),2**(N)),HR(2**(N),2**(N)))
     HL = 0.d0
@@ -133,68 +194,59 @@ module rg
       HR(2**(N-1)+1+kk,1+kk) = 1
       HR(1+kk,2**(N-1)+1+kk) = 1
     end do
+  end subroutine
 
-    allocate(Hin(2**(2*N),2**(2*N)))
+  subroutine diagonalize_H(H, eigenvalues, nvec, eigenvectors)
+    double precision, dimension(:,:), allocatable :: H
+    double precision, dimension(:), allocatable   :: eigenvalues
+    double precision, dimension(:,:), allocatable :: eigenvectors
 
-    Hin = tens_prod(HL,HR)
-  end function
+    double precision, dimension(:,:), allocatable              :: supp
+    integer :: LWORK, LIWORK, INFO, N, M, LWMAX, dims(2), nvec
+    double precision :: VL, VU, ABSTOL
+    double precision, dimension(:), allocatable                :: WORK
+    integer, dimension(:), allocatable                         :: ISUPPZ, IWORK
 
-  subroutine findkEigenvalue(matrix, eigenvalues, kk, Z)
+    dims = shape(H)
+    N    = dims(1)
+    LWMAX = 100000
+    ABSTOL = 0.
+    VU = 0.
+    VL = 0.
 
-        double precision, dimension(:,:), allocatable, intent(IN)    :: matrix
-        double precision, dimension(:), allocatable, intent(INOUT) :: eigenvalues
-        double precision, dimension(:,:), allocatable, intent(OUT) :: Z
+    allocate(WORK(LWMAX))
+    allocate(IWORK(LWMAX))
+    allocate(ISUPPZ(2*nvec))
+    allocate(eigenvectors(N, nvec))
+    allocate(supp(N, N))
+    allocate(eigenvalues(N))
 
-        double precision, dimension(:,:), allocatable              :: supp
-        integer :: LWORK, LIWORK, INFO, N, M, LWMAX, dims(2), kk
-        double precision :: VL, VU, ABSTOL
-        double precision, dimension(:), allocatable                :: WORK
-        integer, dimension(:), allocatable                         :: ISUPPZ, IWORK
+    supp = H
+    LWORK = -1
+    LIWORK = -1
 
+    ! Computing optimal workspace...
+    call DSYEVR('V', 'I', 'U', N, supp, N, VL, VU, 1, nvec, &
+                ABSTOL, M, eigenvalues, eigenvectors, N, ISUPPZ, &
+                WORK, LWORK, IWORK, LIWORK, INFO)
+    LWORK = min(LWMAX, int(WORK(1)))
+    LIWORK = min(LWMAX, int(IWORK(1)))
 
-        dims = shape(matrix)
-        N    = dims(1)
-        LWMAX = 100000
-        ABSTOL = 0.
-        VU = 0.
-        VL = 0.
+    ! Computing eigenvalues...
+    call DSYEVR('V', 'I', 'U', N, supp, N, VL, VU, 1, nvec, &
+                ABSTOL, M, eigenvalues, eigenvectors, N, ISUPPZ, &
+                WORK, LWORK, IWORK, LIWORK, INFO)
 
-        allocate(WORK(LWMAX))
-        allocate(IWORK(LWMAX))
-        allocate(ISUPPZ(2*kk))
-        allocate(Z(N, kk))
-        allocate(supp(N, N))
-        allocate(eigenvalues(N))
-
-        supp = matrix
-
-    !   compute optimal size of workspace
-        LWORK = -1
-        LIWORK = -1
-        !print*, "Computing optimal workspace..."
-        call DSYEVR('V', 'I', 'U', N, supp, N, VL, VU, 1, kk, &
-                    ABSTOL, M, eigenvalues, Z, N, ISUPPZ, &
-                    WORK, LWORK, IWORK, LIWORK, INFO)
-        LWORK = min(LWMAX, int(WORK(1)))
-        LIWORK = min(LWMAX, int(IWORK(1)))
-
-    !   compute eigenvalues
-        !print*, "Computing eigenvalues..."
-        call DSYEVR('V', 'I', 'U', N, supp, N, VL, VU, 1, kk, &
-                    ABSTOL, M, eigenvalues, Z, N, ISUPPZ, &
-                    WORK, LWORK, IWORK, LIWORK, INFO)
-
-        if (INFO .NE. 0) then
-            print*, 'Failure!'
-            stop
-        end if
-
-        deallocate(IWORK, WORK, ISUPPZ)
-
-    end subroutine findkEigenvalue
+    deallocate(IWORK, WORK, ISUPPZ)
+  end subroutine diagonalize_H
 end module rg
 
 module other
+  ! ---------------------------------------------------------------------!
+  ! --------------------------- DOCUMENTATION ---------------------------!
+  ! ---------------------------------------------------------------------!
+  ! TYPES: none                                                          !
+  ! ---------------------------------------------------------------------!
   contains
 
   character(len=20) function str(k)
@@ -203,6 +255,30 @@ module other
     write (str, *) k
     str = adjustl(str)
   end function str
+
+  subroutine project(P, M, Mred)
+    double precision, dimension(:,:)              :: P, M
+    double precision, allocatable, dimension(:,:) :: Mred
+
+    if(allocated(Mred)) then
+      deallocate(Mred)
+    end if
+
+    allocate( Mred( size(P,2), size(P,2) ) )
+    Mred = matmul( matmul( transpose(P), M), P )
+  end subroutine project
+
+  function identity(dim) result(id)
+    integer                          :: dim, ii
+    double precision, dimension(:, :), allocatable :: id
+
+    allocate(id(dim, dim))
+    id = 0d0
+
+    do ii = 1, dim
+      id(ii, ii) = 1d0
+    end do
+    end function identity
 end module other
 
 program ising_rg
@@ -211,8 +287,8 @@ program ising_rg
   use isingmod
   use rg
 
-  integer          :: N, nit
-  double precision :: lambda
+  integer          :: N, nit ! initial number of spins, max number of iterations
+  double precision :: lambda ! strenght of external field
 
   integer :: it ! iteration of the algorithm it goes from 1 to nit
 
@@ -221,17 +297,24 @@ program ising_rg
   integer :: iostat
 
   ! of each iteration...
-  double precision, dimension(:,:), allocatable :: HN     ! first hamiltonian
-  double precision, dimension(:,:), allocatable :: H2N    ! doubled hamiltonian
-  double precision, dimension(:,:), allocatable :: P      !
+  double precision, dimension(:,:), allocatable :: HN         ! first hamiltonian
+  double precision, dimension(:,:), allocatable :: H2N        ! doubled hamiltonian
+  double precision, dimension(:,:), allocatable :: HL, HR     ! interac hamiltonian
+  double precision, dimension(:,:), allocatable :: HLred, HRred     ! interac hamiltonian
+  double precision, dimension(:,:), allocatable :: P          ! Project
 
-  double precision, dimension(:), allocatable :: evls
-  double precision                            :: oldevl
-  integer*8                                   :: sizeofspace
+  double precision, dimension(:), allocatable :: evls        ! eigenvalues
+  double precision                            :: oldevl      ! eigenvalue of the previous iteration
+  logical                                     :: converged   ! check if already converged
+  integer*8                                   :: sizeofspace ! number of spins at each iterations
+  integer                                     :: stopprog
 
   character(20) :: folder, file
 
+
   DEBUG = .TRUE.
+  converged = .FALSE.
+
   print*, "+------------------------------------------+"
   print*, "+   renormalization group algorith on the  +"
   print*, "+                ISING MODEL               +"
@@ -244,13 +327,22 @@ program ising_rg
   print*, "+ N: starting Number of spin1/2 particles  +"
   print*, "+ nit: number of iterations                +"
   print*, "+ lambda: intensity of external field      +"
+  print*, "+ stopprog: stop the program if convergence+"
+  print*, "+           has been reached               +"
+  print*, "+           stop -> 1                      +"
+  print*, "+           dont -> 0                      +"
   print*, "+------------------------------------------+"
 
-  write(*,"(A)",advance='no') " + Type N, nit, lambda, folder, file: "
-  read (*,*, iostat=iostat) N, nit, lambda, folder, file
+  write(*,"(A)",advance='no') " + Type N, nit, lambda, stopprog, folder, file: "
+  read (*,*, iostat=iostat) N, nit, lambda, stopprog, folder, file
 
   call system("mkdir -p ./data/"//trim(folder))
+
+  ! Store the gs energy at each iteration
   open(1, file = "./data/"//trim(folder)//"/"//trim(file)//".csv")
+
+  ! Store the number of iterations to each stability
+  open(2, file = "./data/"//trim(folder)//"/"//trim(file)//"convergence.csv")
 
   ! Check if parameters are the right types
   if(iostat /= 0) then
@@ -293,6 +385,7 @@ program ising_rg
     print*, "+ First Hamiltonian initialized            +"
   end if
 
+  call init_interaction_H(N,HL,HR)
   print*, "+ Iterating...                             +"
   ! iterations
   do it = 1, nit, 1
@@ -301,32 +394,40 @@ program ising_rg
     end if
 
     allocate(H2N(2**(2*N),2**(2*N)))
+
     sizeofspace = 2*sizeofspace
 
-    if(it==1) then
-      H2N = mat_tensor_I(HN) + I_tensor_mat(HN) + init_interaction_H(N)
-    else
-      H2N = mat_tensor_I(HN) + I_tensor_mat(HN) + matmul(matmul(transpose(P),init_interaction_H(N)),P)
-      deallocate(P)
+    H2N = mat_tensor_I(HN) + I_tensor_mat(HN) + tens_prod(HL,HR)
+    HLred = tens_prod(HL, identity(2**N))
+    HRred = tens_prod(identity(2**N), HR)
+
+    call diagonalize_H(H2N, evls, 2**N, P)
+
+    call project(P, H2N, HN)
+    call project(P, HLred, HL)
+    call project(P, HRred, HR)
+
+    if(abs(oldevl - evls(1)/sizeofspace)<1d-12) then
+      if(converged .eqv. .FALSE.) then
+        print*, "+ Algorithm has reached convergence"
+        if(stopprog == 1) then
+          converged = .TRUE.
+          write(2,*) it
+          stop
+        end if
+      end if
     end if
 
-    call findkEigenvalue(H2N, evls, 2**N, P)
-
-    HN = matmul(matmul(transpose(P),H2N),P)
- 
-    if(abs(oldevl - evls(1)/sizeofspace)<1d-10) then
-      print*, "+ Algorithm has reached convergence"
-      !stop
-    end if
-    
     write(1,*) evls(1)/sizeofspace
     oldevl = evls(1)/sizeofspace
-    
-    
 
-    deallocate(H2N,evls)
+    deallocate(H2N,evls,P)
 
   end do
+  if(converged .eqv. .FALSE.) then
+    print*, " Algorithm has NOT reached convergence     +"
+    write(2,*) -1
+  end if
   print*, "+------------------------------------------+"
   print*, "+ Done!                                    +"
   print*, "+------------------------------------------+"
