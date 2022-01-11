@@ -105,6 +105,13 @@ end subroutine
 
 #### 6. Density Matrices [80/100]
 
+#### 7. Ising Model [80/100]
+<<<<<<< HEAD
+
+#### 8. Renormalization Group [100/100] :star2:
+
 #### 7. Ising Model
+=======
+>>>>>>> dbda02ceeda85c1e75389606c0fbadebb81244a1
 
 #### 8. Renormalization Group

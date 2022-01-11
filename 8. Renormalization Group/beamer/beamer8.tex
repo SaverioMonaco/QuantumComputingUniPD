@@ -1,6 +1,6 @@
 \documentclass[pt12]{beamer}
 %\documentclass[pt12,externalviewer]{beamer}
-
+\usepackage{enumitem}
 \usepackage{amssymb}
 \usepackage{minted}
 %\usepackage{rotating}
@@ -143,21 +143,71 @@ where
 \begin{frame}[fragile,label=RB]
 	\frametitle{Renormalization Group algorithm}
 	\tableofcontents[pausesections]
+	\fontsize{8pt}{10pt}\selectfont
 	\textbf{Algorithm:}
 	\begin{itemize}
 		\item[\textbf{1.}] Initialize Ising's Hamiltonian for a given N:  $H_N$
 		\item[\textbf{2.}] Double the system size:
 		$$
 		\begin{align}
-			H_{2N} &= H^{L}_N + H^R_N + H^{INT} =\\
-			       &= H_N\otimes \bigotimes_{i=1}^{N}\mathbb{I} + \bigotimes_{i=1}^{N}\mathbb{I} \otimes H_N
+			H_{2N} &= H_N\otimes \bigotimes_{i=1}^{N}\mathbb{I} + \bigotimes_{i=1}^{N}\mathbb{I} \otimes H_N
+			       + \left[\bigotimes_{j=1}^{N-1} \mathbb{I} \otimes \sigma^x\right]\otimes\left[\sigma^x\otimes \bigotimes_{j=1}^{N-1} \mathbb{I} \right]
 		\end{align}$$ 
+	\item[\textbf{3.}] Diagonalize $H_{2N}$ and build the projector P using the first $2^N$ eigenvalues.
+	\item[\textbf{4.}] Reduce the 2N-Hamiltonian:
+	$$\tilde{H}_{2N}=P^\dagger H_{2N} P \qquad dim[\tilde{H}_{2N}] = 2^N$$
+	\item[\textbf{5.}] Iterate:
+	$$\begin{align}
+		H_{2N}^{(1)} &= \tilde{H}_{2N} \otimes [\mathbb{I}]_N + [\mathbb{I}]_N \otimes \tilde{H}_{2N} + \tilde{H}_{int}  \\
+	\tilde{H}_{int} &= P^\dagger\left[\bigotimes_{j=1}^N\mathbb{I} \otimes H^L_{int}\right]P \otimes P^\dagger\left[H^R_{int}\otimes\bigotimes_{j=1}^N\mathbb{I}\right]
+	\end{align}$$
 	\end{itemize}
 \end{frame}
 
-\begin{frame}[fragile,label=RB]
-	\frametitle{Renormalization Group}
+\begin{frame}[fragile,label=Code development]
+	\frametitle{Code development}
 	\tableofcontents[pausesections]
+	\textbf{Before looping:}
+		\begin{minted}[fontsize=\small, framesep=4mm, gobble=3]{Fortran}
+			! to initialize the first hamiltonian (system size = N)
+			function ising_init_H(N,lambda) result(H)
+			
+			! to initialize the 2 matrices for the interactions between 
+			! 2 subsystems of system size = N
+			call init_interaction_H(N,HL,HR)
+		\end{minted}
+	\textbf{At each iteration:}
+	\begin{minted}[fontsize=\small, framesep=4mm, gobble=2]{Fortran}
+		H2N = mat_tensor_I(HN) + I_tensor_mat(HN) + tens_prod(HL,HR)
+				
+		call diagonalize_H(H2N, evls, 2**N, P)
+		
+		HLred = tens_prod(HL, identity(2**N))
+		HRred = tens_prod(identity(2**N), HR)
+		call project(P, H2N, HN)
+		call project(P, HLred, HL)
+		call project(P, HRred, HR)
+		
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile,label=Results]
+	\frametitle{Results}
+	\begin{figure}[h]
+		\includesvg[width=.5\textwidth]{../RG/imgs/RG_static.svg}\includesvg[width=.5\textwidth]{../RG/imgs/convergence.svg}
+	\end{figure}
+\begin{figure}[h]
+	\hspace*{-1.5 cm}\includesvg[width=1.2\textwidth]{../RG/imgs/RG_static_anim.svg}
+\end{figure}
+\end{frame}
+
+\begin{frame}[fragile,label=Self evaluation]
+	\frametitle{Self evaluation}
+	\begin{enumerate}[leftmargin=2cm]
+		\item[\textbf{\color{PDred}Correctness}: ] The algorithm seems to give the proper values of the Ground-State energy for each $\lambda$ according to last exercise.
+		\item[\textbf{\color{PDred}Stability}: ] The algorithm gives a \texttt{-Infinity} result for the energies at around 80 iterations due to the overflow for the integer \texttt{sizeofspace}.
+		\item[\textbf{\color{PDred}Efficiency}: ] \texttt{double precision} arrays were used to use as little memory as possible, for the diagonalization it was used \texttt{DSYEVR} function from the Lapack library.
+	\end{enumerate}
 \end{frame}
 
 \include{sslide}
